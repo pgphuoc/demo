@@ -86,11 +86,44 @@
         .suggestion-item:hover {
             background-color: #f3f4f6;
         }
+        
+        /* Flowchart styles */
+        .flowchart-node {
+            position: relative;
+            padding-left: 30px; /* Space for icon and line */
+        }
+        .flowchart-node:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 32px;
+            bottom: -16px; /* Connects to the next node */
+            width: 2px;
+            background-color: #e5e7eb;
+        }
+        .flowchart-icon {
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 26px;
+            height: 26px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid;
+            background-color: white;
+        }
+        .flowchart-icon.status-future { border-color: #9ca3af; color: #9ca3af; }
+        .flowchart-icon.status-pending { border-color: #facc15; color: #facc15; }
+        .flowchart-icon.status-approved { border-color: #4ade80; color: #4ade80; }
+        .flowchart-icon.status-rejected { border-color: #f87171; color: #f87171; }
+
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Prototype: Quy Trình Phê Duyệt Động</h1>
         <p class="text-gray-600 mb-8">Tạo và quản lý nhiều quy trình, sau đó xem chúng được áp dụng trên một phiếu yêu cầu mẫu.</p>
 
@@ -206,20 +239,45 @@
         <!-- Screen 2: Workflow Application -->
         <div id="application-screen" class="hidden">
              <div class="bg-white p-6 rounded-xl shadow-sm">
-                <div class="mb-6">
+                <div class="mb-4">
                      <label for="workflow-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn quy trình để kiểm tra (test)</label>
                      <select id="workflow-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></select>
                 </div>
 
-                <div class="border-t pt-6">
-                    <h2 id="applicant-title" class="text-xl font-bold mb-1"></h2>
-                    <p id="applicant-subtitle" class="text-gray-500 mb-4"></p>
-                    
-                    <div id="condition-check-container" class="mb-6"></div>
-
-                    <div id="workflow-status-container" class="mt-6">
-                        <!-- Workflow status will be rendered here -->
+                <div id="approval-view-content" class="hidden">
+                    <!-- Top Bar -->
+                    <div class="p-4 bg-gray-50 rounded-lg border flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h2 id="applicant-title" class="text-xl font-bold text-gray-900"></h2>
+                            <p id="applicant-subtitle" class="text-sm text-gray-600"></p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button id="main-reject-btn" class="px-6 py-2.5 text-sm font-semibold rounded-md text-red-700 bg-red-100 hover:bg-red-200">Từ chối</button>
+                            <button id="main-approve-btn" class="px-6 py-2.5 text-sm font-semibold rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Duyệt</button>
+                        </div>
                     </div>
+
+                    <!-- Main Content -->
+                    <div class="mt-6 grid grid-cols-10 gap-8">
+                        <!-- Left Panel (Content) -->
+                        <div class="col-span-10 md:col-span-6">
+                            <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Nội dung đề xuất</h3>
+                            <div id="request-content-container" class="space-y-4 text-sm">
+                                <!-- Sample request content will be rendered here -->
+                            </div>
+                        </div>
+                        <!-- Right Panel (Flowchart) -->
+                        <div class="col-span-10 md:col-span-4">
+                             <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Quy trình Phê duyệt</h3>
+                             <div id="condition-check-container" class="mb-6"></div>
+                             <div id="workflow-flowchart-container">
+                                <!-- Workflow flowchart will be rendered here -->
+                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="no-workflow-selected" class="text-center py-10">
+                    <p class="text-gray-600">Vui lòng chọn một quy trình để kiểm tra.</p>
                 </div>
             </div>
         </div>
@@ -238,10 +296,36 @@
             'payment.request': { 'amount': 'Số tiền' }
         };
         const sampleRecord = {
-            'purchase.order': { id: 'PO/2025/00123', data: { amount_total: 65000000, product_qty: 10 } },
-            'sale.order': { id: 'SO/2025/00345', data: { amount_total: 120000000, order_line_count: 5 } },
-            'purchase.request': { id: 'PR/2025/00089', data: { estimated_cost: 25000000 } },
-            'payment.request': { id: 'PAY/2025/00156', data: { amount: 15000000 } }
+            'purchase.order': { id: 'PO/2025/00123', data: { amount_total: 65000000, product_qty: 10 }, content: `...` },
+            'sale.order': { id: 'SO/2025/00345', data: { amount_total: 120000000, order_line_count: 5 }, content: `...` },
+            'purchase.request': { 
+                id: 'PR/2025/00089', 
+                data: { estimated_cost: 25000000 },
+                content: `
+                    <p><strong>Người đề xuất:</strong> Nguyễn Văn A</p>
+                    <p><strong>Phòng ban:</strong> Phòng Kinh doanh</p>
+                    <p><strong>Ngày đề xuất:</strong> 08/07/2025</p>
+                    <p><strong>Lý do:</strong> Bổ sung vật tư cho dự án Quý 3/2025.</p>
+                    <table class="w-full mt-4 border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border p-2 text-left">Sản phẩm</th>
+                                <th class="border p-2 text-right">Số lượng</th>
+                                <th class="border p-2 text-right">Đơn giá (dự kiến)</th>
+                                <th class="border p-2 text-right">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="border p-2">Laptop Dell Vostro</td><td class="border p-2 text-right">1</td><td class="border p-2 text-right">18,000,000</td><td class="border p-2 text-right">18,000,000</td></tr>
+                            <tr><td class="border p-2">Màn hình 24" LG</td><td class="border p-2 text-right">2</td><td class="border p-2 text-right">3,500,000</td><td class="border p-2 text-right">7,000,000</td></tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="font-bold"><td colspan="3" class="border p-2 text-right">Tổng chi phí dự kiến</td><td class="border p-2 text-right">25,000,000</td></tr>
+                        </tfoot>
+                    </table>
+                `
+            },
+            'payment.request': { id: 'PAY/2025/00156', data: { amount: 15000000 }, content: `...` }
         };
         // --- END: Data Simulation ---
 
@@ -270,10 +354,15 @@
         const conditionValueInput = document.getElementById('condition-value');
 
         const workflowSelector = document.getElementById('workflow-selector');
-        const workflowStatusContainer = document.getElementById('workflow-status-container');
+        const approvalViewContent = document.getElementById('approval-view-content');
+        const noWorkflowSelected = document.getElementById('no-workflow-selected');
         const applicantTitle = document.getElementById('applicant-title');
         const applicantSubtitle = document.getElementById('applicant-subtitle');
         const conditionCheckContainer = document.getElementById('condition-check-container');
+        const requestContentContainer = document.getElementById('request-content-container');
+        const workflowFlowchartContainer = document.getElementById('workflow-flowchart-container');
+        const mainApproveBtn = document.getElementById('main-approve-btn');
+        const mainRejectBtn = document.getElementById('main-reject-btn');
 
         let levelCounter = 0;
         let currentEditingId = null;
@@ -685,13 +774,12 @@
         function renderApplicantView(workflowId) {
             const workflows = getWorkflows();
             if (workflows.length === 0) {
-                workflowStatusContainer.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg">
+                noWorkflowSelected.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg">
                     <h3 class="text-lg font-medium text-gray-800">Chưa có quy trình nào.</h3>
                     <p class="mt-1 text-sm text-gray-500">Vui lòng quay lại tab "Quản lý Quy trình" để tạo mới.</p>
                 </div>`;
-                applicantTitle.textContent = '';
-                applicantSubtitle.textContent = '';
-                conditionCheckContainer.innerHTML = '';
+                noWorkflowSelected.classList.remove('hidden');
+                approvalViewContent.classList.add('hidden');
                 return;
             }
             
@@ -699,14 +787,19 @@
             const workflow = workflows.find(w => w.id === selectedId);
             
             if (!workflow) {
-                workflowStatusContainer.innerHTML = `<p class="text-gray-600">Vui lòng chọn một quy trình để kiểm tra.</p>`;
+                noWorkflowSelected.classList.remove('hidden');
+                approvalViewContent.classList.add('hidden');
                 return;
             }
+            
+            noWorkflowSelected.classList.add('hidden');
+            approvalViewContent.classList.remove('hidden');
 
             const record = sampleRecord[workflow.model];
             applicantTitle.textContent = `${modelNames[workflow.model]}: ${record.id}`;
             const subtitleData = Object.entries(record.data).map(([key, val]) => `${modelFields[workflow.model][key]}: ${val.toLocaleString('en-US')}`).join(' | ');
             applicantSubtitle.textContent = `Người yêu cầu: Nguyễn Văn A | ${subtitleData}`;
+            requestContentContainer.innerHTML = record.content;
             
             let conditionMet = true;
             if (workflow.condition) {
@@ -742,13 +835,18 @@
             }
 
             if (!conditionMet) {
-                workflowStatusContainer.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg border-yellow-400 bg-yellow-50">
+                workflowFlowchartContainer.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg border-yellow-400 bg-yellow-50">
                     <h3 class="text-lg font-medium text-yellow-800">Quy trình không được áp dụng.</h3>
                     <p class="mt-1 text-sm text-yellow-700">Bản ghi không thỏa mãn điều kiện đã được cấu hình.</p>
                 </div>`;
+                mainApproveBtn.disabled = true;
+                mainRejectBtn.disabled = true;
                 return;
             }
             
+            mainApproveBtn.disabled = false;
+            mainRejectBtn.disabled = false;
+
             const simulationWorkflow = JSON.parse(JSON.stringify(workflow));
             simulationWorkflow.levels.forEach(level => {
                 level.status = 'future';
@@ -805,15 +903,27 @@
         }
         
         function renderSimulationFromState(simulationWorkflow) {
-             let html = `<h3 class="text-lg font-semibold text-gray-800 mb-4">Trạng thái phê duyệt cho: ${simulationWorkflow.workflow_name}</h3>`;
-            html += '<div class="space-y-3">';
+            let html = '<div class="space-y-4">';
+            let isAnyLevelPending = false;
             simulationWorkflow.levels.forEach((level, index) => {
                  let statusClass = '', statusText = '';
+                 let iconHtml = '';
                 switch(level.status) {
-                    case 'pending': statusClass = 'approval-status-pending'; statusText = 'Đang chờ duyệt'; break;
-                    case 'approved': statusClass = 'approval-status-approved'; statusText = 'Đã phê duyệt'; break;
-                    case 'rejected': statusClass = 'approval-status-rejected'; statusText = 'Đã từ chối'; break;
-                    default: statusClass = 'approval-status-future'; statusText = 'Chưa tới lượt';
+                    case 'pending': 
+                        statusClass = 'status-pending'; statusText = 'Đang chờ duyệt'; isAnyLevelPending = true;
+                        iconHtml = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+                        break;
+                    case 'approved': 
+                        statusClass = 'status-approved'; statusText = 'Đã phê duyệt';
+                        iconHtml = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>`;
+                        break;
+                    case 'rejected': 
+                        statusClass = 'status-rejected'; statusText = 'Đã từ chối';
+                        iconHtml = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+                        break;
+                    default: 
+                        statusClass = 'status-future'; statusText = 'Chưa tới lượt';
+                        iconHtml = `<span class="text-xs font-bold">${index + 1}</span>`;
                 }
                  let conditionText = '';
                 switch(level.approval_mode) {
@@ -821,13 +931,15 @@
                     case 'any': conditionText = 'Bất kỳ'; break;
                     case 'percentage': conditionText = `${level.required_percentage}%`; break;
                 }
-                 html += `<div class="p-4 rounded-lg border-l-4 ${statusClass}" data-level-index="${index}">
-                        <div class="flex justify-between items-center">
-                            <p class="font-bold text-gray-800">${index + 1}. ${level.name}</p>
-                            <span class="text-xs font-bold uppercase px-2 py-1 rounded-full ${statusClass}">${statusText}</span>
-                        </div>
-                        <p class="text-sm text-gray-500 mt-1">Điều kiện: ${conditionText}</p>
-                        <div class="mt-3 space-y-2">`;
+                 html += `<div class="flowchart-node" data-level-index="${index}">
+                            <div class="flowchart-icon ${statusClass}">${iconHtml}</div>
+                            <div class="p-3 rounded-lg border bg-white">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-bold text-gray-800">${level.name}</p>
+                                    <span class="text-xs font-bold uppercase px-2 py-1 rounded-full ${statusClass.replace('status-', 'approval-status-')}">${statusText}</span>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">Điều kiện: ${conditionText}</p>
+                                <div class="mt-3 space-y-2">`;
                 const approverList = level.approver_type === 'job_position' ? level.approvers.map(dept => `Trưởng phòng ${dept}`) : level.approvers;
                 approverList.forEach(approver => {
                     const originalApproverName = level.approver_type === 'job_position' ? level.approvers[approverList.indexOf(approver)] : approver;
@@ -836,33 +948,34 @@
                     let approverStatus = 'Chờ duyệt', approverStatusColor = 'text-gray-500';
                     if (hasApproved) { approverStatus = 'Đã duyệt'; approverStatusColor = 'text-green-600'; } 
                     else if (hasRejected) { approverStatus = 'Đã từ chối'; approverStatusColor = 'text-red-600'; }
-                     html += `<div class="flex items-center justify-between p-2 bg-white rounded-md border">
+                     html += `<div class="flex items-center justify-between p-2 bg-gray-50 rounded-md border">
                             <div class="flex items-center">
-                                <span class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600 mr-3">${approver.charAt(0).toUpperCase()}</span>
+                                <span class="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-2">${approver.charAt(0).toUpperCase()}</span>
                                 <div>
                                     <p class="font-medium text-sm">${approver}</p>
                                     <p class="text-xs ${approverStatusColor}">${approverStatus}</p>
                                 </div>
                             </div>
                             ${level.status === 'pending' && !hasApproved && !hasRejected ? `
-                            <div class="space-x-2">
+                            <div class="space-x-1">
                                 <button class="px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700" onclick="handleApproval(this, '${originalApproverName}', 'approve')">Duyệt</button>
                                 <button class="px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700" onclick="handleApproval(this, '${originalApproverName}', 'reject')">Từ chối</button>
                             </div>` : ''}
                         </div>`;
                 });
-                html += `</div></div>`;
+                html += `</div></div></div>`;
             });
             html += '</div>';
-            workflowStatusContainer.innerHTML = html;
+            workflowFlowchartContainer.innerHTML = html;
+            
+            mainApproveBtn.disabled = !isAnyLevelPending;
+            mainRejectBtn.disabled = !isAnyLevelPending;
         }
 
         function populateWorkflowSelector() {
             const workflows = getWorkflows();
-            workflowSelector.innerHTML = '';
-            if (workflows.length === 0) {
-                 workflowSelector.innerHTML = '<option>Không có quy trình nào</option>';
-            } else {
+            workflowSelector.innerHTML = '<option value="">-- Chọn quy trình --</option>';
+            if (workflows.length > 0) {
                 workflows.forEach(w => {
                     const option = document.createElement('option');
                     option.value = w.id;
@@ -911,6 +1024,19 @@
                 e.target.value = '';
             }
         });
+        mainApproveBtn.addEventListener('click', () => {
+            const pendingNode = document.querySelector('.flowchart-node .status-pending');
+            if (pendingNode) {
+                pendingNode.querySelector('button.bg-green-600')?.click();
+            }
+        });
+        mainRejectBtn.addEventListener('click', () => {
+            const pendingNode = document.querySelector('.flowchart-node .status-pending');
+            if (pendingNode) {
+                 pendingNode.querySelector('button.bg-red-600')?.click();
+            }
+        });
+
 
         // Initial Load
         if (getWorkflows().length === 0) {
