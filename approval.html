@@ -169,7 +169,6 @@
                                 <label for="workflow-model" class="block text-sm font-medium text-gray-700 mb-1">Áp dụng cho phiếu (*)</label>
                                 <select id="workflow-model" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                                     <option value="purchase.order">Đơn Mua hàng</option>
-                                    <option value="sale.order">Đơn Bán hàng</option>
                                     <option value="purchase.request">Đề xuất mua hàng</option>
                                     <option value="payment.request">Đề nghị thanh toán</option>
                                 </select>
@@ -282,6 +281,25 @@
             </div>
         </div>
     </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+      <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+          <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900">Xác nhận hành động</h3>
+          <div class="mt-2 px-7 py-3">
+            <p id="modal-description" class="text-sm text-gray-500"></p>
+            <textarea id="modal-reason" class="mt-2 w-full p-2 border border-gray-300 rounded-md" rows="3" placeholder="..."></textarea>
+            <p id="modal-error" class="text-red-500 text-xs text-left mt-1 hidden">Vui lòng nhập lý do.</p>
+          </div>
+          <div class="items-center px-4 py-3 bg-gray-50 -mx-5 -mb-5 rounded-b-md">
+            <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md mr-2 hover:bg-gray-300">Hủy bỏ</button>
+            <button id="modal-confirm-btn" class="px-4 py-2 text-white text-sm font-medium rounded-md">Xác nhận</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -291,13 +309,25 @@
         const allNotifiables = [...new Set([...allUsers, ...allDepartments])]; // Combined list for notifications
         const modelFields = {
             'purchase.order': { 'amount_total': 'Tổng giá trị', 'product_qty': 'Tổng số lượng' },
-            'sale.order': { 'amount_total': 'Tổng giá trị', 'order_line_count': 'Số dòng sản phẩm' },
             'purchase.request': { 'estimated_cost': 'Chi phí dự kiến' },
             'payment.request': { 'amount': 'Số tiền' }
         };
         const sampleRecord = {
-            'purchase.order': { id: 'PO/2025/00123', data: { amount_total: 65000000, product_qty: 10 }, content: `...` },
-            'sale.order': { id: 'SO/2025/00345', data: { amount_total: 120000000, order_line_count: 5 }, content: `...` },
+            'purchase.order': { 
+                id: 'PO/2025/00123', 
+                data: { amount_total: 65000000, product_qty: 10 }, 
+                content: `
+                    <p><strong>Nhà cung cấp:</strong> Công ty TNHH Thiết bị ABC</p>
+                    <p><strong>Ngày đặt hàng:</strong> 08/07/2025</p>
+                    <table class="w-full mt-4 border-collapse border border-gray-300">
+                        <thead><tr class="bg-gray-100"><th class="border p-2 text-left">Sản phẩm</th><th class="border p-2 text-right">Số lượng</th><th class="border p-2 text-right">Đơn giá</th><th class="border p-2 text-right">Thành tiền</th></tr></thead>
+                        <tbody>
+                            <tr><td class="border p-2">Dây cáp điện Cadivi 2.5</td><td class="border p-2 text-right">500 mét</td><td class="border p-2 text-right">110,000</td><td class="border p-2 text-right">55,000,000</td></tr>
+                            <tr><td class="border p-2">Ổ cắm Sino S18</td><td class="border p-2 text-right">100 cái</td><td class="border p-2 text-right">100,000</td><td class="border p-2 text-right">10,000,000</td></tr>
+                        </tbody>
+                        <tfoot><tr class="font-bold"><td colspan="3" class="border p-2 text-right">Tổng cộng</td><td class="border p-2 text-right">65,000,000</td></tr></tfoot>
+                    </table>`
+            },
             'purchase.request': { 
                 id: 'PR/2025/00089', 
                 data: { estimated_cost: 25000000 },
@@ -307,25 +337,16 @@
                     <p><strong>Ngày đề xuất:</strong> 08/07/2025</p>
                     <p><strong>Lý do:</strong> Bổ sung vật tư cho dự án Quý 3/2025.</p>
                     <table class="w-full mt-4 border-collapse border border-gray-300">
-                        <thead>
-                            <tr class="bg-gray-100">
-                                <th class="border p-2 text-left">Sản phẩm</th>
-                                <th class="border p-2 text-right">Số lượng</th>
-                                <th class="border p-2 text-right">Đơn giá (dự kiến)</th>
-                                <th class="border p-2 text-right">Thành tiền</th>
-                            </tr>
-                        </thead>
+                        <thead><tr class="bg-gray-100"><th class="border p-2 text-left">Sản phẩm</th><th class="border p-2 text-right">Số lượng</th><th class="border p-2 text-right">Đơn giá (dự kiến)</th><th class="border p-2 text-right">Thành tiền</th></tr></thead>
                         <tbody>
                             <tr><td class="border p-2">Laptop Dell Vostro</td><td class="border p-2 text-right">1</td><td class="border p-2 text-right">18,000,000</td><td class="border p-2 text-right">18,000,000</td></tr>
                             <tr><td class="border p-2">Màn hình 24" LG</td><td class="border p-2 text-right">2</td><td class="border p-2 text-right">3,500,000</td><td class="border p-2 text-right">7,000,000</td></tr>
                         </tbody>
-                        <tfoot>
-                            <tr class="font-bold"><td colspan="3" class="border p-2 text-right">Tổng chi phí dự kiến</td><td class="border p-2 text-right">25,000,000</td></tr>
-                        </tfoot>
+                        <tfoot><tr class="font-bold"><td colspan="3" class="border p-2 text-right">Tổng chi phí dự kiến</td><td class="border p-2 text-right">25,000,000</td></tr></tfoot>
                     </table>
                 `
             },
-            'payment.request': { id: 'PAY/2025/00156', data: { amount: 15000000 }, content: `...` }
+            'payment.request': { id: 'PAY/2025/00156', data: { amount: 15000000 }, content: `<p>Nội dung chi tiết cho đề nghị thanh toán PAY/2025/00156...</p>` }
         };
         // --- END: Data Simulation ---
 
@@ -363,13 +384,22 @@
         const workflowFlowchartContainer = document.getElementById('workflow-flowchart-container');
         const mainApproveBtn = document.getElementById('main-approve-btn');
         const mainRejectBtn = document.getElementById('main-reject-btn');
+        
+        // Modal elements
+        const modal = document.getElementById('confirmation-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDescription = document.getElementById('modal-description');
+        const modalReason = document.getElementById('modal-reason');
+        const modalError = document.getElementById('modal-error');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
 
         let levelCounter = 0;
         let currentEditingId = null;
+        let currentActionCallback = null;
 
         const modelNames = {
             'purchase.order': 'Đơn Mua hàng',
-            'sale.order': 'Đơn Bán hàng',
             'purchase.request': 'Đề xuất mua hàng',
             'payment.request': 'Đề nghị thanh toán'
         };
@@ -449,37 +479,60 @@
         function generateSampleData() {
             const sampleWorkflows = [
                 {
-                    id: 'sample1',
-                    workflow_name: 'QT Phê duyệt cho Kho',
-                    model: 'purchase.request',
-                    condition: null,
-                    notify_to: ['Phòng Kế toán'],
+                    id: 'sample1', active: true, workflow_name: 'QT Phê duyệt cho Kho', model: 'purchase.request',
+                    condition: null, notify_to: ['Phòng Kế toán'],
                     levels: [
                         { name: 'Chủ quản trực tiếp', approver_type: 'user', approvers: ['Ngọc Oanh'], approval_mode: 'all' },
-                        { name: 'Phó TGĐ', approver_type: 'user', approvers: ['Quang Lộc'], approval_mode: 'all' },
+                        { name: 'Phó TGĐ (Kho & KD)', approver_type: 'user', approvers: ['Quang Lộc'], approval_mode: 'all' },
                         { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
                     ]
                 },
                 {
-                    id: 'sample2',
-                    workflow_name: 'QT Phê duyệt Điện nước (>20M)',
-                    model: 'purchase.order',
-                    condition: { field: 'amount_total', operator: '>=', value: 20000000 },
-                    notify_to: ['Phòng Kế toán'],
+                    id: 'sample2', active: true, workflow_name: 'QT Phê duyệt Điện nước (>20M)', model: 'purchase.order',
+                    condition: { field: 'amount_total', operator: '>=', value: 20000000 }, notify_to: ['Phòng Kế toán'],
                     levels: [
                         { name: 'Chủ quản trực tiếp', approver_type: 'user', approvers: ['Võ Huy Tài'], approval_mode: 'all' },
-                        { name: 'Phó TGĐ', approver_type: 'user', approvers: ['Đình Phúc'], approval_mode: 'all' },
+                        { name: 'Phó TGĐ (Khối SX)', approver_type: 'user', approvers: ['Đình Phúc'], approval_mode: 'all' },
                         { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
                     ]
                 },
                 {
-                    id: 'sample3',
-                    workflow_name: 'QT Phê duyệt Sản xuất B5 (2 cấp)',
-                    model: 'purchase.request',
-                    condition: null,
-                    notify_to: [],
+                    id: 'sample3', active: false, workflow_name: 'QT Phê duyệt Sản xuất B5 (2 cấp)', model: 'purchase.request',
+                    condition: null, notify_to: [],
                     levels: [
                         { name: 'TP. Sản xuất B5', approver_type: 'user', approvers: ['Duy Phong'], approval_mode: 'all' },
+                        { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
+                    ]
+                },
+                {
+                    id: 'sample4', active: true, workflow_name: 'QT Thanh toán Marketing (< 10M)', model: 'payment.request',
+                    condition: { field: 'amount', operator: '<', value: 10000000 }, notify_to: ['Phòng Marketing'],
+                    levels: [
+                        { name: 'Trưởng phòng Marketing', approver_type: 'job_position', approvers: ['Phòng Kinh doanh'], approval_mode: 'all' },
+                        { name: 'Kế toán trưởng', approver_type: 'job_position', approvers: ['Phòng Kế toán'], approval_mode: 'all' }
+                    ]
+                },
+                {
+                    id: 'sample5', active: true, workflow_name: 'QT Mua hàng (Bất kỳ GĐ duyệt)', model: 'purchase.order',
+                    condition: null, notify_to: ['Phòng Kinh doanh', 'Phòng Kế toán'],
+                    levels: [
+                        { name: 'Ban Giám đốc', approver_type: 'user', approvers: ['Quang Lộc', 'Đình Phúc', 'Y Đạt'], approval_mode: 'any' }
+                    ]
+                },
+                {
+                    id: 'sample6', active: true, workflow_name: 'QT Mua sắm IT (đa duyệt)', model: 'purchase.request',
+                    condition: null, notify_to: [],
+                    levels: [
+                        { name: 'Trưởng phòng IT & Chủ quản', approver_type: 'user', approvers: ['Võ Huy Tài', 'Ngọc Oanh'], approval_mode: 'all' },
+                        { name: 'Phó TGĐ (Khối SX)', approver_type: 'user', approvers: ['Đình Phúc'], approval_mode: 'all' },
+                        { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
+                    ]
+                },
+                {
+                    id: 'sample7', active: true, workflow_name: 'QT Nhân sự (tỷ lệ)', model: 'payment.request',
+                    condition: null, notify_to: [],
+                    levels: [
+                        { name: 'Hội đồng nhân sự', approver_type: 'user', approvers: ['Trần Thị B', 'Lê Văn C', 'Phạm Thị D'], approval_mode: 'percentage', required_percentage: 67 },
                         { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
                     ]
                 }
@@ -509,24 +562,38 @@
                 const notifyText = w.notify_to && w.notify_to.length > 0 ? w.notify_to.join(', ') : 'Không có';
 
                 const item = document.createElement('div');
-                item.className = 'bg-white p-4 rounded-lg shadow-sm border flex justify-between items-center';
+                item.className = 'bg-white p-4 rounded-lg shadow-sm border';
                 item.innerHTML = `
-                    <div>
-                        <p class="font-bold text-indigo-700">${w.workflow_name}</p>
-                        <p class="text-sm text-gray-500">Áp dụng cho: <b>${modelNames[w.model]}</b> | ${w.levels.length} cấp duyệt</p>
-                        <p class="text-sm text-gray-500 mt-1">Điều kiện: <span class="font-mono text-xs bg-gray-100 p-1 rounded">${conditionText}</span></p>
-                        <p class="text-sm text-gray-500 mt-1">Thông báo: <span class="text-xs italic">${notifyText}</span></p>
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-3 flex-wrap">
+                             <p class="font-bold text-indigo-700">${w.workflow_name}</p>
+                             <span class="text-xs font-medium px-2 py-0.5 rounded-full ${w.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                ${w.active ? 'Hoạt động' : 'Không hoạt động'}
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <label class="relative inline-flex items-center cursor-pointer" title="Bật/Tắt quy trình">
+                              <input type="checkbox" class="sr-only peer status-toggle" ${w.active ? 'checked' : ''} data-id="${w.id}">
+                              <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                            <button class="edit-btn p-1 text-gray-500 hover:text-indigo-600" data-id="${w.id}" title="Sửa">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
+                            </button>
+                            <button class="delete-btn p-1 text-gray-500 hover:text-red-600" data-id="${w.id}" title="Xóa">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="space-x-2">
-                        <button class="edit-btn text-sm font-medium text-indigo-600 hover:text-indigo-900" data-id="${w.id}">Sửa</button>
-                        <button class="delete-btn text-sm font-medium text-red-600 hover:text-red-900" data-id="${w.id}">Xóa</button>
-                    </div>
+                    <p class="text-sm text-gray-500">Áp dụng cho: <b>${modelNames[w.model]}</b> | ${w.levels.length} cấp duyệt</p>
+                    <p class="text-sm text-gray-500 mt-1">Điều kiện: <span class="font-mono text-xs bg-gray-100 p-1 rounded">${conditionText}</span></p>
+                    <p class="text-sm text-gray-500 mt-1">Thông báo: <span class="text-xs italic">${notifyText}</span></p>
                 `;
                 workflowListContainer.appendChild(item);
             });
             
-            document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => showFormView(e.target.dataset.id)));
-            document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteWorkflow(e.target.dataset.id)));
+            document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => showFormView(e.currentTarget.dataset.id)));
+            document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteWorkflow(e.currentTarget.dataset.id)));
+            document.querySelectorAll('.status-toggle').forEach(toggle => toggle.addEventListener('change', (e) => toggleWorkflowStatus(e.target.dataset.id, e.target.checked)));
         }
 
         function addLevel(levelData = {}) {
@@ -751,9 +818,11 @@
             let workflows = getWorkflows();
             if (currentEditingId) {
                 const index = workflows.findIndex(w => w.id === currentEditingId);
-                workflows[index] = { ...workflows[index], ...newWorkflow };
+                newWorkflow.active = workflows[index].active; // Preserve active status
+                workflows[index] = { id: currentEditingId, ...newWorkflow };
             } else {
                 newWorkflow.id = Date.now().toString();
+                newWorkflow.active = true; // Default to active for new workflows
                 workflows.push(newWorkflow);
             }
             
@@ -770,13 +839,47 @@
                 renderWorkflowList();
             }
         }
+        
+        function toggleWorkflowStatus(id, isActive) {
+            let workflows = getWorkflows();
+            const index = workflows.findIndex(w => w.id === id);
+            if (index !== -1) {
+                workflows[index].active = isActive;
+                saveWorkflows(workflows);
+                renderWorkflowList();
+            }
+        }
+        
+        function showConfirmationModal(action, callback) {
+            currentActionCallback = callback;
+            modalReason.classList.remove('border-red-500');
+            modalError.classList.add('hidden');
+
+            if (action === 'reject') {
+                modalTitle.textContent = 'Xác nhận Từ chối';
+                modalDescription.textContent = 'Vui lòng nhập lý do từ chối.';
+                modalReason.required = true;
+                modalReason.placeholder = 'Lý do từ chối (bắt buộc)...';
+                modalConfirmBtn.className = 'px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700';
+            } else {
+                modalTitle.textContent = 'Xác nhận Phê duyệt';
+                modalDescription.textContent = 'Bạn có thể nhập ghi chú hoặc chỉ đạo (tùy chọn).';
+                modalReason.required = false;
+                modalReason.placeholder = 'Ghi chú (tùy chọn)...';
+                modalConfirmBtn.className = 'px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700';
+            }
+            modalReason.value = '';
+            modal.classList.remove('hidden');
+        }
 
         function renderApplicantView(workflowId) {
             const workflows = getWorkflows();
-            if (workflows.length === 0) {
+            const activeWorkflows = workflows.filter(w => w.active);
+
+            if (activeWorkflows.length === 0) {
                 noWorkflowSelected.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg">
-                    <h3 class="text-lg font-medium text-gray-800">Chưa có quy trình nào.</h3>
-                    <p class="mt-1 text-sm text-gray-500">Vui lòng quay lại tab "Quản lý Quy trình" để tạo mới.</p>
+                    <h3 class="text-lg font-medium text-gray-800">Không có quy trình nào đang hoạt động.</h3>
+                    <p class="mt-1 text-sm text-gray-500">Vui lòng quay lại tab "Quản lý Quy trình" để kích hoạt hoặc tạo mới.</p>
                 </div>`;
                 noWorkflowSelected.classList.remove('hidden');
                 approvalViewContent.classList.add('hidden');
@@ -784,7 +887,7 @@
             }
             
             const selectedId = workflowId || workflowSelector.value;
-            const workflow = workflows.find(w => w.id === selectedId);
+            const workflow = activeWorkflows.find(w => w.id === selectedId);
             
             if (!workflow) {
                 noWorkflowSelected.classList.remove('hidden');
@@ -852,6 +955,8 @@
                 level.status = 'future';
                 level.approved_by = [];
                 level.rejected_by = [];
+                level.skipped_by = [];
+                level.comments = {};
             });
             if (simulationWorkflow.levels.length > 0) {
                 simulationWorkflow.levels[0].status = 'pending';
@@ -860,22 +965,29 @@
             renderSimulationFromState(simulationWorkflow);
         }
 
-        window.handleApproval = function(buttonElement, approver, action) {
-            const levelIndex = parseInt(buttonElement.closest('[data-level-index]').dataset.levelIndex);
+        function processApproval(levelIndex, approver, action, reason) {
             const simulationWorkflow = window.simulationState;
             if (!simulationWorkflow) return;
             
             const level = simulationWorkflow.levels[levelIndex];
+            
+            if (level.status === 'approved' || level.status === 'rejected') return;
 
-            if (action === 'approve') {
-                if (!level.approved_by.includes(approver)) level.approved_by.push(approver);
-            } else if (action === 'reject') {
+            if (reason) {
+                level.comments[approver] = reason;
+            }
+
+            if (action === 'reject') {
                 if (!level.rejected_by.includes(approver)) level.rejected_by.push(approver);
                 level.status = 'rejected';
                 renderSimulationFromState(simulationWorkflow);
-                const notificationList = ['Người tạo phiếu (Nguyễn Văn A)', ...(simulationWorkflow.notify_to || [])].join(', ');
+                const notificationList = 'Người tạo phiếu (Nguyễn Văn A)';
                 setTimeout(() => alert(`Quy trình đã bị TỪ CHỐI.\n\nĐã gửi thông báo đến: ${notificationList}`), 100);
                 return;
+            }
+            
+            if (action === 'approve') {
+                if (!level.approved_by.includes(approver)) level.approved_by.push(approver);
             }
 
             let isCompleted = false;
@@ -883,8 +995,12 @@
             const approvedCount = level.approved_by.length;
 
             switch(level.approval_mode) {
-                case 'any': if (approvedCount >= 1) isCompleted = true; break;
-                case 'all': if (approvedCount === totalApprovers) isCompleted = true; break;
+                case 'any': 
+                    if (approvedCount >= 1) isCompleted = true; 
+                    break;
+                case 'all': 
+                    if (approvedCount === totalApprovers) isCompleted = true; 
+                    break;
                 case 'percentage':
                     if ((approvedCount / totalApprovers) * 100 >= level.required_percentage) isCompleted = true;
                     break;
@@ -892,6 +1008,14 @@
 
             if (isCompleted) {
                 level.status = 'approved';
+                if (level.approval_mode === 'any') {
+                    level.approvers.forEach(a => {
+                        if (!level.approved_by.includes(a)) {
+                            level.skipped_by.push(a);
+                        }
+                    });
+                }
+
                 if (simulationWorkflow.levels[levelIndex + 1]) {
                     simulationWorkflow.levels[levelIndex + 1].status = 'pending';
                 } else {
@@ -900,6 +1024,12 @@
                 }
             }
             renderSimulationFromState(simulationWorkflow);
+        }
+
+        window.promptForApproval = function(levelIndex, approver, action) {
+            showConfirmationModal(action, (reason) => {
+                processApproval(levelIndex, approver, action, reason);
+            });
         }
         
         function renderSimulationFromState(simulationWorkflow) {
@@ -945,22 +1075,30 @@
                     const originalApproverName = level.approver_type === 'job_position' ? level.approvers[approverList.indexOf(approver)] : approver;
                     const hasApproved = level.approved_by.includes(originalApproverName);
                     const hasRejected = level.rejected_by.includes(originalApproverName);
+                    const hasSkipped = level.skipped_by.includes(originalApproverName);
+                    const comment = level.comments?.[originalApproverName];
+
                     let approverStatus = 'Chờ duyệt', approverStatusColor = 'text-gray-500';
                     if (hasApproved) { approverStatus = 'Đã duyệt'; approverStatusColor = 'text-green-600'; } 
                     else if (hasRejected) { approverStatus = 'Đã từ chối'; approverStatusColor = 'text-red-600'; }
-                     html += `<div class="flex items-center justify-between p-2 bg-gray-50 rounded-md border">
-                            <div class="flex items-center">
-                                <span class="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-2">${approver.charAt(0).toUpperCase()}</span>
-                                <div>
-                                    <p class="font-medium text-sm">${approver}</p>
-                                    <p class="text-xs ${approverStatusColor}">${approverStatus}</p>
+                    else if (hasSkipped) { approverStatus = 'Đã bỏ qua'; approverStatusColor = 'text-gray-400'; }
+
+                     html += `<div class="p-2 bg-gray-50 rounded-md border">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div class="flex items-center flex-grow min-w-0">
+                                    <span class="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-2 flex-shrink-0">${approver.charAt(0).toUpperCase()}</span>
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-sm truncate">${approver}</p>
+                                        <p class="text-xs ${approverStatusColor}">${approverStatus}</p>
+                                    </div>
                                 </div>
+                                ${level.status === 'pending' && !hasApproved && !hasRejected && !hasSkipped ? `
+                                <div class="space-x-1 flex-shrink-0">
+                                    <button class="px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700" onclick="promptForApproval(${index}, '${originalApproverName}', 'approve')">Duyệt</button>
+                                    <button class="px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700" onclick="promptForApproval(${index}, '${originalApproverName}', 'reject')">Từ chối</button>
+                                </div>` : ''}
                             </div>
-                            ${level.status === 'pending' && !hasApproved && !hasRejected ? `
-                            <div class="space-x-1">
-                                <button class="px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700" onclick="handleApproval(this, '${originalApproverName}', 'approve')">Duyệt</button>
-                                <button class="px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700" onclick="handleApproval(this, '${originalApproverName}', 'reject')">Từ chối</button>
-                            </div>` : ''}
+                            ${comment ? `<div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 italic">“${comment}”</div>` : ''}
                         </div>`;
                 });
                 html += `</div></div></div>`;
@@ -974,9 +1112,10 @@
 
         function populateWorkflowSelector() {
             const workflows = getWorkflows();
+            const activeWorkflows = workflows.filter(w => w.active);
             workflowSelector.innerHTML = '<option value="">-- Chọn quy trình --</option>';
-            if (workflows.length > 0) {
-                workflows.forEach(w => {
+            if (activeWorkflows.length > 0) {
+                activeWorkflows.forEach(w => {
                     const option = document.createElement('option');
                     option.value = w.id;
                     option.textContent = w.workflow_name;
@@ -1025,15 +1164,57 @@
             }
         });
         mainApproveBtn.addEventListener('click', () => {
-            const pendingNode = document.querySelector('.flowchart-node .status-pending');
-            if (pendingNode) {
-                pendingNode.querySelector('button.bg-green-600')?.click();
+            const simulationWorkflow = window.simulationState;
+            if (!simulationWorkflow) return;
+            const pendingLevel = simulationWorkflow.levels.find(l => l.status === 'pending');
+            if(pendingLevel) {
+                const levelIndex = simulationWorkflow.levels.indexOf(pendingLevel);
+                const firstAvailableApprover = pendingLevel.approvers.find(a => 
+                    !pendingLevel.approved_by.includes(a) && 
+                    !pendingLevel.rejected_by.includes(a) &&
+                    !pendingLevel.skipped_by.includes(a)
+                );
+                if(firstAvailableApprover) {
+                    promptForApproval(levelIndex, firstAvailableApprover, 'approve');
+                }
             }
         });
         mainRejectBtn.addEventListener('click', () => {
-            const pendingNode = document.querySelector('.flowchart-node .status-pending');
-            if (pendingNode) {
-                 pendingNode.querySelector('button.bg-red-600')?.click();
+            const simulationWorkflow = window.simulationState;
+            if (!simulationWorkflow) return;
+            const pendingLevel = simulationWorkflow.levels.find(l => l.status === 'pending');
+            if(pendingLevel) {
+                const levelIndex = simulationWorkflow.levels.indexOf(pendingLevel);
+                const firstAvailableApprover = pendingLevel.approvers.find(a => 
+                    !pendingLevel.approved_by.includes(a) && 
+                    !pendingLevel.rejected_by.includes(a) &&
+                    !pendingLevel.skipped_by.includes(a)
+                );
+                if(firstAvailableApprover) {
+                    promptForApproval(levelIndex, firstAvailableApprover, 'reject');
+                }
+            }
+        });
+        
+        // Modal Listeners
+        modalCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
+        modalConfirmBtn.addEventListener('click', () => {
+            const reason = modalReason.value.trim();
+            if(modalReason.required && !reason) {
+                modalReason.classList.add('border-red-500');
+                modalError.classList.remove('hidden');
+                return;
+            }
+            if(currentActionCallback) {
+                currentActionCallback(reason);
+            }
+            modal.classList.add('hidden');
+            currentActionCallback = null;
+        });
+        modalReason.addEventListener('input', () => {
+            if (modalReason.classList.contains('border-red-500')) {
+                modalReason.classList.remove('border-red-500');
+                modalError.classList.add('hidden');
             }
         });
 
