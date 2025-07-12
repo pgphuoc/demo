@@ -3,1227 +3,787 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prototype Quy Trình Phê Duyệt</title>
+    <title>Ứng dụng Quản lý Sales & Công việc</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- LeafletJS CSS & JS for Interactive Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
     <style>
+        /* Custom styles */
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
         }
-        .tab-button.active {
-            border-color: #4f46e5;
-            color: #4f46e5;
-            background-color: #eef2ff;
-        }
-        .tab-button {
-            border-color: #d1d5db;
-        }
-        .level-card {
-            transition: all 0.3s ease;
-        }
-        .approval-status-pending { background-color: #fefce8; border-left-color: #facc15; }
-        .approval-status-approved { background-color: #f0fdf4; border-left-color: #4ade80; }
-        .approval-status-rejected { background-color: #fef2f2; border-left-color: #f87171; }
-        .approval-status-future { background-color: #f9fafb; border-left-color: #9ca3af; }
-
-        /* Tag Input Styles */
-        .tag-input-wrapper {
-            position: relative;
-        }
-        .tag-input-container {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            padding: 4px;
-            border: 1px solid #d1d5db;
-            border-radius: 0.375rem;
-            background-color: white;
-            min-height: 42px;
-        }
-        .tag-input-container:focus-within {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 1px #4f46e5;
-        }
-        .tag-item {
-            display: flex;
-            align-items: center;
-            background-color: #e0e7ff;
-            color: #3730a3;
-            border-radius: 0.25rem;
-            padding: 4px 8px;
-            margin: 2px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-        .tag-remove-btn {
-            margin-left: 8px;
-            cursor: pointer;
-            color: #4f46e5;
-        }
-        .tag-input-field {
-            flex-grow: 1;
-            border: none;
-            outline: none;
-            padding: 6px;
-            background-color: transparent;
-        }
-        .suggestions-list {
-            position: absolute;
+        #map {
+            height: 100%;
             width: 100%;
-            background-color: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.375rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 10;
-            margin-top: 4px;
+            border-radius: 0.5rem;
         }
-        .suggestion-item {
-            padding: 8px 12px;
+        .leaflet-popup-content-wrapper {
+            border-radius: 0.5rem;
+        }
+        .list-item-selected {
+            background-color: #e0f2fe; /* light blue */
+            border-left: 4px solid #0ea5e9; /* sky-500 */
+        }
+        .leaflet-div-icon {
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 2px solid white;
+        }
+        .legend {
+            padding: 6px 10px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            line-height: 24px;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            border-radius: 50%;
+            border: 1px solid #ccc;
+        }
+        .customer-label {
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+            font-weight: bold;
+            font-size: 11px;
+            color: #374151;
+            text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+        }
+        .nav-item.active {
+            background-color: #0c4a6e; /* sky-900 */
+            color: white;
+        }
+        .nav-item.active i {
+            color: #7dd3fc; /* sky-300 */
+        }
+        .modal-backdrop {
+            background-color: rgba(0,0,0,0.5);
+        }
+        .task-filter-tab.active {
+            border-color: #0ea5e9; /* sky-500 */
+            color: #0284c7; /* sky-600 */
+            font-weight: 600;
+        }
+        .task-item-completed p, .task-item-completed .text-sm {
+            text-decoration: line-through;
+            color: #9ca3af; /* gray-400 */
+        }
+        /* Custom Checkbox for Task Completion */
+        .task-complete-toggle {
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.25em;
+            height: 1.25em;
+            border: 0.15em solid #d1d5db;
+            border-radius: 0.25rem;
+            transform: translateY(-0.075em);
+            display: grid;
+            place-content: center;
             cursor: pointer;
         }
-        .suggestion-item:hover {
-            background-color: #f3f4f6;
+        .task-complete-toggle::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #0ea5e9;
+            transform-origin: bottom left;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
         }
-        
-        /* Flowchart styles */
-        .flowchart-node {
-            position: relative;
-            padding-left: 30px; /* Space for icon and line */
+        .task-complete-toggle:checked::before {
+            transform: scale(1);
         }
-        .flowchart-node:not(:last-child)::before {
-            content: '';
-            position: absolute;
-            left: 12px;
-            top: 32px;
-            bottom: -16px; /* Connects to the next node */
-            width: 2px;
-            background-color: #e5e7eb;
+        select, input[type="date"] {
+            padding-left: 2.5rem;
         }
-        .flowchart-icon {
-            position: absolute;
-            left: 0;
-            top: 6px;
-            width: 26px;
-            height: 26px;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid;
-            background-color: white;
-        }
-        .flowchart-icon.status-future { border-color: #9ca3af; color: #9ca3af; }
-        .flowchart-icon.status-pending { border-color: #facc15; color: #facc15; }
-        .flowchart-icon.status-approved { border-color: #4ade80; color: #4ade80; }
-        .flowchart-icon.status-rejected { border-color: #f87171; color: #f87171; }
-
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-slate-50 text-slate-800">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Prototype: Quy Trình Phê Duyệt Động</h1>
-        <p class="text-gray-600 mb-8">Tạo và quản lý nhiều quy trình, sau đó xem chúng được áp dụng trên một phiếu yêu cầu mẫu.</p>
-
-        <!-- Tabs -->
-        <div class="mb-8 border-b border-gray-200">
-            <nav class="flex space-x-4" aria-label="Tabs">
-                <button id="tab-creator" class="tab-button active font-semibold whitespace-nowrap py-3 px-4 border-b-2 text-sm">
-                    1. Quản Lý Quy Trình
-                </button>
-                <button id="tab-applicant" class="tab-button font-semibold whitespace-nowrap py-3 px-4 border-b-2 text-sm">
-                    2. Áp Dụng trên Phiếu Yêu Cầu (Sample)
-                </button>
+    <div class="flex h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-800 text-slate-200 flex flex-col flex-shrink-0">
+            <div class="p-4 border-b border-slate-700 flex items-center justify-center">
+                 <i class="fas fa-chart-line text-sky-400 text-3xl"></i>
+                <h1 class="text-2xl font-bold text-white ml-3">CRM Pro</h1>
+            </div>
+            <nav class="flex-grow p-2">
+                <ul>
+                    <li>
+                        <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200" data-page="page-sales-dashboard">
+                            <i class="fas fa-map-marked-alt w-6 text-center text-slate-400"></i>
+                            <span class="ml-3">Quản lý Sales</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="nav-item flex items-center px-4 py-3 rounded-lg hover:bg-slate-700 transition-colors duration-200" data-page="page-task-management">
+                            <i class="fas fa-tasks w-6 text-center text-slate-400"></i>
+                            <span class="ml-3">Quản lý Công việc</span>
+                        </a>
+                    </li>
+                </ul>
             </nav>
-        </div>
+        </aside>
 
-        <!-- Screen 1: Workflow Management -->
-        <div id="creator-screen">
-            <!-- View 1.1: List of workflows -->
-            <div id="workflow-list-view">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">Danh sách Quy trình Phê duyệt</h2>
-                    <button id="show-form-btn" class="inline-flex items-center justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                        <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                        Tạo Quy trình Mới
-                    </button>
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- Page 1: Sales Dashboard -->
+            <div id="page-sales-dashboard" class="page-content flex flex-col h-full">
+                <header class="bg-white shadow-sm p-4 z-20">
+                    <h1 class="text-2xl font-semibold text-slate-900">Bảng Điều Khiển Check-in</h1>
+                </header>
+                <div class="bg-white p-3 border-t border-slate-200 z-10">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-center gap-4">
+                        <div class="w-full relative">
+                            <i class="fas fa-calendar-alt absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="date" id="date-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm" title="Chọn ngày">
+                        </div>
+                        <div class="w-full relative">
+                            <i class="fas fa-user-tie absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <select id="employee-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm" title="Chọn nhân viên">
+                                <option value="all">Tất cả nhân viên</option>
+                            </select>
+                        </div>
+                        <div class="w-full relative">
+                             <i class="fas fa-map-pin absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <select id="region-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm" title="Chọn khu vực">
+                                <option value="all">Tất cả khu vực</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div id="workflow-list-container" class="space-y-3">
-                    <!-- Workflow list will be rendered here -->
-                </div>
-            </div>
-
-            <!-- View 1.2: Form for creating/editing a workflow -->
-            <div id="workflow-form-view" class="hidden">
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h2 id="form-title" class="text-xl font-bold mb-4">Tạo Quy trình Mới</h2>
-                    <div class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="workflow-name" class="block text-sm font-medium text-gray-700 mb-1">Tên quy trình (*)</label>
-                                <input type="text" id="workflow-name" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="VD: Phê duyệt Đơn Mua hàng > 50M">
+                <div class="flex-grow flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
+                    <div class="w-full md:w-1/3 lg:w-1/4 flex flex-col">
+                        <div class="bg-white p-4 rounded-lg border border-slate-200 flex-grow flex flex-col overflow-hidden">
+                            <div class="border-b pb-2 mb-3">
+                                <h2 id="checkin-list-title" class="text-lg font-semibold text-slate-800">Danh sách Check-in</h2>
+                                <p id="checkin-summary" class="text-sm text-slate-600 mt-1"></p>
                             </div>
-                            <div>
-                                <label for="workflow-model" class="block text-sm font-medium text-gray-700 mb-1">Áp dụng cho phiếu (*)</label>
-                                <select id="workflow-model" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="purchase.order">Đơn Mua hàng</option>
-                                    <option value="purchase.request">Đề xuất mua hàng</option>
-                                    <option value="payment.request">Đề nghị thanh toán</option>
-                                </select>
-                            </div>
+                            <div id="checkin-list" class="overflow-y-auto space-y-3 pr-2 flex-grow"></div>
                         </div>
-
-                        <div class="border-t border-gray-200 pt-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Điều kiện Áp dụng (Tùy chọn)</h3>
-                             <p class="text-sm text-gray-500 mb-4">Quy trình sẽ chỉ được kích hoạt nếu bản ghi thỏa mãn điều kiện này.</p>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                                <div>
-                                    <label for="condition-field" class="block text-sm font-medium text-gray-700 mb-1">Trường áp dụng</label>
-                                    <select id="condition-field" class="w-full p-2 border border-gray-300 rounded-md"></select>
-                                </div>
-                                <div>
-                                    <label for="condition-operator" class="block text-sm font-medium text-gray-700 mb-1">Điều kiện</label>
-                                    <select id="condition-operator" class="w-full p-2 border border-gray-300 rounded-md">
-                                        <option value=">=">&gt;= (Lớn hơn hoặc bằng)</option>
-                                        <option value="<=">&lt;= (Nhỏ hơn hoặc bằng)</option>
-                                        <option value=">">&gt; (Lớn hơn)</option>
-                                        <option value="<">&lt; (Nhỏ hơn)</option>
-                                        <option value="==">= (Bằng)</option>
-                                        <option value="!=">!= (Khác)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="condition-value" class="block text-sm font-medium text-gray-700 mb-1">Giá trị</label>
-                                    <input type="tel" id="condition-value" class="w-full p-2 border border-gray-300 rounded-md" placeholder="VD: 50,000,000">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="border-t border-gray-200 pt-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Các Cấp Phê Duyệt</h3>
-                            <div id="levels-container" class="space-y-4"></div>
-                            <button id="add-level-btn" class="mt-4 inline-flex items-center px-4 py-2 border border-dashed border-gray-400 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                                Thêm Cấp Phê Duyệt
-                            </button>
-                        </div>
-                        
-                        <div class="border-t border-gray-200 pt-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Thông báo khi hoàn thành</h3>
-                            <p class="text-sm text-gray-500 mb-4">Những người này sẽ được thông báo. Người tạo phiếu luôn được thông báo mặc định.</p>
-                            <div id="notify-wrapper" class="tag-input-wrapper">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Thông báo đến</label>
-                                <div class="tag-input-container">
-                                    <input type="text" class="tag-input-field" placeholder="Tìm kiếm người dùng hoặc phòng ban...">
-                                </div>
-                                <div class="suggestions-list hidden"></div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end space-x-3 border-t border-gray-200 pt-6">
-                             <button id="cancel-btn" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-100">
-                                Hủy bỏ
-                            </button>
-                            <button id="save-workflow-btn" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                                Lưu Quy Trình
-                            </button>
-                        </div>
+                    </div>
+                    <div class="w-full md:w-2/3 lg:w-3/4 bg-white rounded-lg border border-slate-200 p-2 relative">
+                        <div id="map"></div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Screen 2: Workflow Application -->
-        <div id="application-screen" class="hidden">
-             <div class="bg-white p-6 rounded-xl shadow-sm">
-                <div class="mb-4">
-                     <label for="workflow-selector" class="block text-sm font-medium text-gray-700 mb-1">Chọn quy trình để kiểm tra (test)</label>
-                     <select id="workflow-selector" class="w-full p-2 border border-gray-300 rounded-md shadow-sm"></select>
-                </div>
-
-                <div id="approval-view-content" class="hidden">
-                    <!-- Top Bar -->
-                    <div class="p-4 bg-gray-50 rounded-lg border flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div>
-                            <h2 id="applicant-title" class="text-xl font-bold text-gray-900"></h2>
-                            <p id="applicant-subtitle" class="text-sm text-gray-600"></p>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <button id="main-reject-btn" class="px-6 py-2.5 text-sm font-semibold rounded-md text-red-700 bg-red-100 hover:bg-red-200">Từ chối</button>
-                            <button id="main-approve-btn" class="px-6 py-2.5 text-sm font-semibold rounded-md text-white bg-indigo-600 hover:bg-indigo-700">Duyệt</button>
-                        </div>
-                    </div>
-
-                    <!-- Main Content -->
-                    <div class="mt-6 grid grid-cols-10 gap-8">
-                        <!-- Left Panel (Content) -->
-                        <div class="col-span-10 md:col-span-6">
-                            <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Nội dung đề xuất</h3>
-                            <div id="request-content-container" class="space-y-4 text-sm">
-                                <!-- Sample request content will be rendered here -->
+            <!-- Page 2: Task Management -->
+            <div id="page-task-management" class="page-content hidden flex-col h-full">
+                 <header class="bg-white shadow-sm p-4 z-20 flex justify-between items-center">
+                    <h1 class="text-2xl font-semibold text-slate-900">Quản lý Công việc</h1>
+                    <button id="btn-create-task" class="bg-sky-600 text-white px-4 py-2 rounded-lg hover:bg-sky-700 transition-colors shadow-sm"><i class="fas fa-plus mr-2"></i>Tạo công việc mới</button>
+                </header>
+                <div class="flex-grow p-4 overflow-y-auto">
+                    <!-- Advanced Filters -->
+                    <div class="p-4 mb-4 border rounded-lg bg-white border-slate-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="relative">
+                                <label for="task-assignee-filter" class="block text-sm font-medium text-slate-700 mb-1">Người thực hiện</label>
+                                <i class="fas fa-user absolute left-3 bottom-3 text-slate-400"></i>
+                                <select id="task-assignee-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm"></select>
+                            </div>
+                             <div class="relative">
+                                <label for="task-assigner-filter" class="block text-sm font-medium text-slate-700 mb-1">Người giao</label>
+                                <i class="fas fa-user-tag absolute left-3 bottom-3 text-slate-400"></i>
+                                <select id="task-assigner-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm"></select>
+                            </div>
+                            <div class="relative">
+                                <label for="task-group-filter" class="block text-sm font-medium text-slate-700 mb-1">Nhóm công việc</label>
+                                <i class="fas fa-folder-open absolute left-3 bottom-3 text-slate-400"></i>
+                                <select id="task-group-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm"></select>
+                            </div>
+                             <div class="relative">
+                                <label for="task-tag-filter" class="block text-sm font-medium text-slate-700 mb-1">Tags</label>
+                                <i class="fas fa-tags absolute left-3 bottom-3 text-slate-400"></i>
+                                <select id="task-tag-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm"></select>
+                            </div>
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Khoảng ngày hết hạn</label>
+                                <div class="flex items-center space-x-2">
+                                    <div class="relative w-1/2">
+                                        <i class="fas fa-calendar-day absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        <input type="date" id="task-start-date-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm" title="Từ ngày">
+                                    </div>
+                                    <span class="text-slate-500">-</span>
+                                    <div class="relative w-1/2">
+                                        <i class="fas fa-calendar-day absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                        <input type="date" id="task-end-date-filter" class="w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500 text-sm" title="Đến ngày">
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <!-- Right Panel (Flowchart) -->
-                        <div class="col-span-10 md:col-span-4">
-                             <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Quy trình Phê duyệt</h3>
-                             <div id="condition-check-container" class="mb-6"></div>
-                             <div id="workflow-flowchart-container">
-                                <!-- Workflow flowchart will be rendered here -->
-                             </div>
+                    </div>
+                    <!-- Task Filter Tabs -->
+                     <div class="border-b border-slate-200">
+                        <nav id="task-filter-nav" class="-mb-px flex space-x-8" aria-label="Tabs">
+                            <button class="task-filter-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="all">Tất cả</button>
+                            <button class="task-filter-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="important">Quan trọng</button>
+                            <button class="task-filter-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="overdue">Quá hạn</button>
+                            <button class="task-filter-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="incomplete">Chưa hoàn thành</button>
+                            <button class="task-filter-tab whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300" data-filter="completed">Đã hoàn thành</button>
+                        </nav>
+                    </div>
+                    <div class="pt-4">
+                        <div id="task-list-container" class="space-y-3">
+                            <!-- Task items will be injected here -->
                         </div>
                     </div>
                 </div>
-                <div id="no-workflow-selected" class="text-center py-10">
-                    <p class="text-gray-600">Vui lòng chọn một quy trình để kiểm tra.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="task-modal" class="fixed inset-0 z-50 hidden items-center justify-center modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b">
+                <h3 id="task-modal-title" class="text-xl font-semibold">Tạo công việc mới</h3>
+            </div>
+            <form id="task-form" class="flex-grow p-6 space-y-4 overflow-y-auto">
+                <input type="hidden" id="task-id">
+                <div>
+                    <label for="task-name" class="block text-sm font-medium text-slate-700">Tên công việc</label>
+                    <input type="text" id="task-name" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500">
                 </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="task-assigner" class="block text-sm font-medium text-slate-700">Người giao</label>
+                        <select id="task-assigner" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"></select>
+                    </div>
+                    <div>
+                        <label for="task-assignee" class="block text-sm font-medium text-slate-700">Người thực hiện</label>
+                        <select id="task-assignee" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"></select>
+                    </div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="task-due-date" class="block text-sm font-medium text-slate-700">Ngày đến hạn</label>
+                        <input type="date" id="task-due-date" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label for="task-group" class="block text-sm font-medium text-slate-700">Nhóm công việc</label>
+                        <input type="text" id="task-group" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500" placeholder="VD: Triển khai, Báo cáo...">
+                    </div>
+                </div>
+                <div>
+                    <label for="task-content" class="block text-sm font-medium text-slate-700">Nội dung công việc</label>
+                    <textarea id="task-content" rows="4" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500"></textarea>
+                </div>
+                 <div>
+                    <label for="task-tags" class="block text-sm font-medium text-slate-700">Tags (cách nhau bởi dấu phẩy)</label>
+                    <input type="text" id="task-tags" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-sky-500 focus:ring-sky-500" placeholder="VD: frontend, bug, ...">
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="task-important" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                    <label for="task-important" class="ml-2 block text-sm text-slate-900">Đây là công việc quan trọng</label>
+                </div>
+            </form>
+            <div class="p-4 bg-slate-50 border-t flex justify-end space-x-2">
+                <button id="btn-cancel-task" type="button" class="bg-white py-2 px-4 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 hover:bg-slate-50">Hủy</button>
+                <button id="btn-save-task" type="button" class="bg-sky-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-sky-700">Lưu công việc</button>
             </div>
         </div>
     </div>
-    
-    <!-- Confirmation Modal -->
-    <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
-      <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-          <h3 id="modal-title" class="text-lg leading-6 font-medium text-gray-900">Xác nhận hành động</h3>
-          <div class="mt-2 px-7 py-3">
-            <p id="modal-description" class="text-sm text-gray-500"></p>
-            <textarea id="modal-reason" class="mt-2 w-full p-2 border border-gray-300 rounded-md" rows="3" placeholder="..."></textarea>
-            <p id="modal-error" class="text-red-500 text-xs text-left mt-1 hidden">Vui lòng nhập lý do.</p>
-          </div>
-          <div class="items-center px-4 py-3 bg-gray-50 -mx-5 -mb-5 rounded-b-md">
-            <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md mr-2 hover:bg-gray-300">Hủy bỏ</button>
-            <button id="modal-confirm-btn" class="px-4 py-2 text-white text-sm font-medium rounded-md">Xác nhận</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // --- START: Data Simulation ---
-        const allUsers = ["Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D", "Hoàng Văn E", "Vũ Thị F", "Đặng Văn G", "Bùi Thị H", "Võ Huy Tài", "Duy Phong", "Ngọc Oanh", "Quang Lộc", "Đình Phúc", "Y Đạt"];
-        const allDepartments = ["Phòng Kế toán", "Phòng Mua hàng", "Phòng Nhân sự", "Phòng Kinh doanh", "Phòng Kỹ thuật", "Ban Giám đốc", "Kho", "Điện nước", "Sản xuất B5"];
-        const allNotifiables = [...new Set([...allUsers, ...allDepartments])]; // Combined list for notifications
-        const modelFields = {
-            'purchase.order': { 'amount_total': 'Tổng giá trị', 'product_qty': 'Tổng số lượng' },
-            'purchase.request': { 'estimated_cost': 'Chi phí dự kiến' },
-            'payment.request': { 'amount': 'Số tiền' }
-        };
-        const sampleRecord = {
-            'purchase.order': { 
-                id: 'PO/2025/00123', 
-                data: { amount_total: 65000000, product_qty: 10 }, 
-                content: `
-                    <p><strong>Nhà cung cấp:</strong> Công ty TNHH Thiết bị ABC</p>
-                    <p><strong>Ngày đặt hàng:</strong> 08/07/2025</p>
-                    <table class="w-full mt-4 border-collapse border border-gray-300">
-                        <thead><tr class="bg-gray-100"><th class="border p-2 text-left">Sản phẩm</th><th class="border p-2 text-right">Số lượng</th><th class="border p-2 text-right">Đơn giá</th><th class="border p-2 text-right">Thành tiền</th></tr></thead>
-                        <tbody>
-                            <tr><td class="border p-2">Dây cáp điện Cadivi 2.5</td><td class="border p-2 text-right">500 mét</td><td class="border p-2 text-right">110,000</td><td class="border p-2 text-right">55,000,000</td></tr>
-                            <tr><td class="border p-2">Ổ cắm Sino S18</td><td class="border p-2 text-right">100 cái</td><td class="border p-2 text-right">100,000</td><td class="border p-2 text-right">10,000,000</td></tr>
-                        </tbody>
-                        <tfoot><tr class="font-bold"><td colspan="3" class="border p-2 text-right">Tổng cộng</td><td class="border p-2 text-right">65,000,000</td></tr></tfoot>
-                    </table>`
-            },
-            'purchase.request': { 
-                id: 'PR/2025/00089', 
-                data: { estimated_cost: 25000000 },
-                content: `
-                    <p><strong>Người đề xuất:</strong> Nguyễn Văn A</p>
-                    <p><strong>Phòng ban:</strong> Phòng Kinh doanh</p>
-                    <p><strong>Ngày đề xuất:</strong> 08/07/2025</p>
-                    <p><strong>Lý do:</strong> Bổ sung vật tư cho dự án Quý 3/2025.</p>
-                    <table class="w-full mt-4 border-collapse border border-gray-300">
-                        <thead><tr class="bg-gray-100"><th class="border p-2 text-left">Sản phẩm</th><th class="border p-2 text-right">Số lượng</th><th class="border p-2 text-right">Đơn giá (dự kiến)</th><th class="border p-2 text-right">Thành tiền</th></tr></thead>
-                        <tbody>
-                            <tr><td class="border p-2">Laptop Dell Vostro</td><td class="border p-2 text-right">1</td><td class="border p-2 text-right">18,000,000</td><td class="border p-2 text-right">18,000,000</td></tr>
-                            <tr><td class="border p-2">Màn hình 24" LG</td><td class="border p-2 text-right">2</td><td class="border p-2 text-right">3,500,000</td><td class="border p-2 text-right">7,000,000</td></tr>
-                        </tbody>
-                        <tfoot><tr class="font-bold"><td colspan="3" class="border p-2 text-right">Tổng chi phí dự kiến</td><td class="border p-2 text-right">25,000,000</td></tr></tfoot>
-                    </table>
-                `
-            },
-            'payment.request': { id: 'PAY/2025/00156', data: { amount: 15000000 }, content: `<p>Nội dung chi tiết cho đề nghị thanh toán PAY/2025/00156...</p>` }
-        };
-        // --- END: Data Simulation ---
+        // --- MOCK DATA ---
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().slice(0,10);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+        const nextWeekStr = nextWeek.toISOString().slice(0, 10);
+        const lastWeek = new Date(today);
+        lastWeek.setDate(today.getDate() - 7);
+        const lastWeekStr = lastWeek.toISOString().slice(0, 10);
 
-        // DOM Elements
-        const creatorScreen = document.getElementById('creator-screen');
-        const applicationScreen = document.getElementById('application-screen');
-        const tabCreator = document.getElementById('tab-creator');
-        const tabApplicant = document.getElementById('tab-applicant');
+        const employees = [
+            { id: 'NV01', name: 'Nguyễn Văn An' },
+            { id: 'NV02', name: 'Trần Thị Bình' },
+            { id: 'NV03', name: 'Lê Minh Cường' }
+        ];
+        const regions = [
+            { id: 'HC', name: 'Quận Hải Châu', center: [16.047079, 108.206230], zoom: 14 },
+            { id: 'ST', name: 'Quận Sơn Trà', center: [16.0805, 108.2422], zoom: 14 },
+            { id: 'LC', name: 'Quận Liên Chiểu', center: [16.1035, 108.1408], zoom: 13 }
+        ];
+        const checkins = [
+            { id: 'V001', employeeId: 'NV01', customerName: 'Bếp trưởng Hùng', storeName: 'Nhà hàng For You', phone: '0905111222', isPotential: false, taskContent: 'Giao 20kg tôm sú loại 1', timestamp: `${todayStr}T08:25:00`, location: { lat: 16.054407, lng: 108.202164 }, regionId: 'HC' },
+            { id: 'V002', employeeId: 'NV01', customerName: 'Chị Lan (thu mua)', storeName: 'Khách sạn Grand Mercure', phone: '0905333444', isPotential: true, taskContent: 'Giới thiệu sản phẩm cá hồi Nauy fillet', timestamp: `${todayStr}T10:15:00`, location: { lat: 16.060963, lng: 108.214844 }, regionId: 'HC' },
+            { id: 'V003', employeeId: 'NV01', customerName: 'Anh Ba', storeName: 'Vựa hải sản Biển Rạng', phone: '0913555666', isPotential: true, taskContent: 'Chào hàng tôm hùm Alaska', timestamp: `${todayStr}T14:00:00`, location: { lat: 16.069138, lng: 108.225334 }, regionId: 'HC' },
+            { id: 'V004', employeeId: 'NV02', customerName: 'Anh Dũng (bếp)', storeName: 'Nhà hàng hải sản Bé Mặn', phone: '0987654321', isPotential: false, taskContent: 'Thu công nợ tháng trước', timestamp: `${todayStr}T09:00:00`, location: { lat: 16.113, lng: 108.252 }, regionId: 'ST' },
+            { id: 'V005', employeeId: 'NV02', customerName: 'Chị Oanh (quản lý)', storeName: 'Siêu thị Lotte Mart', phone: '02363959888', isPotential: true, taskContent: 'Gửi báo giá hàu sữa Pháp và bào ngư', timestamp: `${todayStr}T11:30:00`, location: { lat: 16.052, lng: 108.216 }, regionId: 'HC' },
+            { id: 'V006', employeeId: 'NV03', customerName: 'Chị Thảo', storeName: 'Chuỗi cửa hàng Hải sản sạch', phone: '0935123789', isPotential: false, taskContent: 'Kiểm tra chất lượng trưng bày sản phẩm', timestamp: `${todayStr}T09:45:00`, location: { lat: 16.115, lng: 108.150 }, regionId: 'LC' },
+            { id: 'V007', employeeId: 'NV03', customerName: 'Anh Phong', storeName: 'Nhà hàng Cua Bể', phone: '0944987654', isPotential: false, taskContent: 'Giao hàng cua Cà Mau', timestamp: `${todayStr}T13:30:00`, location: { lat: 16.071, lng: 108.223 }, regionId: 'HC' },
+        ];
+        let tasks = [
+            { id: 1, name: 'Làm việc với nhà cung cấp Vua Cua', important: true, assignerId: 'NV02', assigneeId: 'NV01', dueDate: tomorrowStr, group: 'Nguồn hàng', content: 'Thương lượng giá mới cho lô hàng cua hoàng đế sắp tới.', tags: ['nhà cung cấp', 'giá', 'cua hoàng đế'], status: 'incomplete' },
+            { id: 2, name: 'Lên chương trình khuyến mãi 30/4', important: true, assignerId: 'NV02', assigneeId: 'NV03', dueDate: yesterdayStr, group: 'Marketing', content: 'Tạo combo hải sản cho gia đình, áp dụng từ 25/4 đến 2/5.', tags: ['khuyến mãi', 'marketing'], status: 'incomplete' },
+            { id: 3, name: 'Kiểm kê kho đông lạnh', important: false, assignerId: 'NV02', assigneeId: 'NV02', dueDate: nextWeekStr, group: 'Vận hành', content: 'Kiểm tra số lượng và HSD của tất cả mặt hàng trong kho đông lạnh.', tags: ['kho', 'kiểm kê'], status: 'incomplete' },
+            { id: 4, name: 'Gửi báo cáo sales tuần', important: false, assignerId: 'NV02', assigneeId: 'NV01', dueDate: todayStr, group: 'Báo cáo', content: 'Gửi báo cáo cho quản lý trước 5h chiều.', tags: ['báo cáo', 'sales'], status: 'completed' },
+            { id: 5, name: 'Phỏng vấn ứng viên Sales mới', important: false, assignerId: 'NV01', assigneeId: 'NV02', dueDate: tomorrowStr, group: 'Nhân sự', content: 'Phỏng vấn vòng 2 cho vị trí nhân viên kinh doanh khu vực Liên Chiểu.', tags: ['tuyển dụng', 'phỏng vấn'], status: 'incomplete' },
+            { id: 6, name: 'Thiết kế catalogue sản phẩm mới', important: true, assignerId: 'NV02', assigneeId: 'NV03', dueDate: nextWeekStr, group: 'Marketing', content: 'Bao gồm các sản phẩm mới: cua Alaska, vẹm xanh New Zealand.', tags: ['thiết kế', 'catalogue', 'sản phẩm mới'], status: 'incomplete' },
+            { id: 7, name: 'Đối soát công nợ với nhà hàng A', important: false, assignerId: 'NV01', assigneeId: 'NV01', dueDate: lastWeekStr, group: 'Công nợ', content: 'Đối soát công nợ quý 2/2025.', tags: ['công nợ', 'kế toán'], status: 'completed' },
+            { id: 8, name: 'Khảo sát giá thị trường cho tôm hùm', important: false, assignerId: 'NV02', assigneeId: 'NV03', dueDate: tomorrowStr, group: 'Nghiên cứu thị trường', content: 'Khảo sát giá bán lẻ tại các siêu thị lớn.', tags: ['giá', 'thị trường'], status: 'incomplete' },
+        ];
         
-        const workflowListView = document.getElementById('workflow-list-view');
-        const workflowFormView = document.getElementById('workflow-form-view');
-        const workflowListContainer = document.getElementById('workflow-list-container');
-        const showFormBtn = document.getElementById('show-form-btn');
-
-        const formTitle = document.getElementById('form-title');
-        const workflowNameInput = document.getElementById('workflow-name');
-        const workflowModelSelect = document.getElementById('workflow-model');
-        const levelsContainer = document.getElementById('levels-container');
-        const addLevelBtn = document.getElementById('add-level-btn');
-        const saveWorkflowBtn = document.getElementById('save-workflow-btn');
-        const cancelBtn = document.getElementById('cancel-btn');
-        const notifyWrapper = document.getElementById('notify-wrapper');
-        
-        const conditionFieldSelect = document.getElementById('condition-field');
-        const conditionOperatorSelect = document.getElementById('condition-operator');
-        const conditionValueInput = document.getElementById('condition-value');
-
-        const workflowSelector = document.getElementById('workflow-selector');
-        const approvalViewContent = document.getElementById('approval-view-content');
-        const noWorkflowSelected = document.getElementById('no-workflow-selected');
-        const applicantTitle = document.getElementById('applicant-title');
-        const applicantSubtitle = document.getElementById('applicant-subtitle');
-        const conditionCheckContainer = document.getElementById('condition-check-container');
-        const requestContentContainer = document.getElementById('request-content-container');
-        const workflowFlowchartContainer = document.getElementById('workflow-flowchart-container');
-        const mainApproveBtn = document.getElementById('main-approve-btn');
-        const mainRejectBtn = document.getElementById('main-reject-btn');
-        
-        // Modal elements
-        const modal = document.getElementById('confirmation-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalDescription = document.getElementById('modal-description');
-        const modalReason = document.getElementById('modal-reason');
-        const modalError = document.getElementById('modal-error');
-        const modalCancelBtn = document.getElementById('modal-cancel-btn');
-        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
-
-        let levelCounter = 0;
-        let currentEditingId = null;
-        let currentActionCallback = null;
-
-        const modelNames = {
-            'purchase.order': 'Đơn Mua hàng',
-            'purchase.request': 'Đề xuất mua hàng',
-            'payment.request': 'Đề nghị thanh toán'
+        const customerTypeConfig = {
+            'potential': { name: 'Khách hàng tiềm năng', color: '#f97316' },
+            'regular': { name: 'Khách hàng', color: '#3b82f6' }
         };
 
-        // --- View Management ---
-        function showListView() {
-            workflowListView.classList.remove('hidden');
-            workflowFormView.classList.add('hidden');
-            renderWorkflowList();
-        }
+        // --- DOM ELEMENTS ---
+        const navItems = document.querySelectorAll('.nav-item');
 
-        function showFormView(workflowId = null) {
-            workflowListView.classList.add('hidden');
-            workflowFormView.classList.remove('hidden');
-            currentEditingId = workflowId;
-            levelsContainer.innerHTML = '';
-            levelCounter = 0;
-            
-            // Clear and re-initialize notify input
-            notifyWrapper.innerHTML = `
-                <label class="block text-sm font-medium text-gray-700 mb-1">Thông báo đến</label>
-                <div class="tag-input-container">
-                    <input type="text" class="tag-input-field" placeholder="Tìm kiếm người dùng hoặc phòng ban...">
-                </div>
-                <div class="suggestions-list hidden"></div>
-            `;
+        // Sales Dashboard Elements
+        const dateFilter = document.getElementById('date-filter');
+        const employeeFilter = document.getElementById('employee-filter');
+        const regionFilter = document.getElementById('region-filter');
+        const checkinList = document.getElementById('checkin-list');
+        const checkinListTitle = document.getElementById('checkin-list-title');
+        const checkinSummary = document.getElementById('checkin-summary');
+        
+        // Task Management Elements
+        const taskListContainer = document.getElementById('task-list-container');
+        const taskModal = document.getElementById('task-modal');
+        const btnCreateTask = document.getElementById('btn-create-task');
+        const btnCancelTask = document.getElementById('btn-cancel-task');
+        const btnSaveTask = document.getElementById('btn-save-task');
+        const taskFilterNav = document.getElementById('task-filter-nav');
+        // Advanced task filters
+        const taskAssigneeFilter = document.getElementById('task-assignee-filter');
+        const taskAssignerFilter = document.getElementById('task-assigner-filter');
+        const taskGroupFilter = document.getElementById('task-group-filter');
+        const taskTagFilter = document.getElementById('task-tag-filter');
+        const taskStartDateFilter = document.getElementById('task-start-date-filter');
+        const taskEndDateFilter = document.getElementById('task-end-date-filter');
+        
+        // --- MAP INITIALIZATION ---
+        let map = null; // Initialize later
+        let markersLayer = null;
+        let legendControl = null;
+        let currentTaskFilter = 'all';
 
-            if (workflowId) {
-                const workflows = getWorkflows();
-                const workflow = workflows.find(w => w.id === workflowId);
-                formTitle.textContent = "Chỉnh sửa Quy trình";
-                workflowNameInput.value = workflow.workflow_name;
-                workflowModelSelect.value = workflow.model;
-                updateConditionFields(workflow.model);
-                if (workflow.condition) {
-                    conditionFieldSelect.value = workflow.condition.field;
-                    conditionOperatorSelect.value = workflow.condition.operator;
-                    conditionValueInput.value = workflow.condition.value.toLocaleString('en-US');
-                } else {
-                    conditionFieldSelect.value = 'none';
-                    conditionValueInput.value = '';
-                }
-                workflow.levels.forEach(addLevel);
-                initializeTagInput(notifyWrapper, allNotifiables, workflow.notify_to || []);
-            } else {
-                formTitle.textContent = "Tạo Quy trình Mới";
-                workflowNameInput.value = '';
-                workflowModelSelect.value = 'purchase.order';
-                updateConditionFields('purchase.order');
-                conditionFieldSelect.value = 'none';
-                conditionValueInput.value = '';
-                addLevel(); // Start with one level
-                initializeTagInput(notifyWrapper, allNotifiables, []);
+        // --- NAVIGATION LOGIC ---
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden'));
+            document.getElementById(pageId).classList.remove('hidden');
+            navItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.page === pageId);
+            });
+            if (pageId === 'page-sales-dashboard' && !map) {
+                initializeSalesDashboard();
+            }
+            if (pageId === 'page-task-management') {
+                resetTaskFilters();
+                populateTaskAdvancedFilters();
+                updateTaskDisplay();
             }
         }
-        
-        function updateConditionFields(modelKey) {
-            conditionFieldSelect.innerHTML = '<option value="none">-- Không áp dụng --</option>';
-            const fields = modelFields[modelKey];
-            for (const key in fields) {
+
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchPage(item.dataset.page);
+            });
+        });
+
+        // --- SALES DASHBOARD LOGIC ---
+        function initializeSalesDashboard() {
+            map = L.map('map').setView([16.0544, 108.2022], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            markersLayer = new L.FeatureGroup().addTo(map);
+            
+            populateSalesFilters();
+            updateSalesDisplay();
+            renderLegend();
+
+            [dateFilter, employeeFilter, regionFilter].forEach(el => el.addEventListener('change', updateSalesDisplay));
+        }
+
+        function getCustomerType(checkin) { return checkin.isPotential ? 'potential' : 'regular'; }
+
+        function populateSalesFilters() {
+            employees.forEach(emp => {
                 const option = document.createElement('option');
-                option.value = key;
-                option.textContent = fields[key];
-                conditionFieldSelect.appendChild(option);
-            }
+                option.value = emp.id;
+                option.textContent = emp.name;
+                employeeFilter.appendChild(option);
+            });
+            regions.forEach(reg => {
+                const option = document.createElement('option');
+                option.value = reg.id;
+                option.textContent = reg.name;
+                regionFilter.appendChild(option);
+            });
+            dateFilter.value = todayStr;
         }
 
-        // --- Data Handling ---
-        function getWorkflows() {
-            return JSON.parse(localStorage.getItem('approvalWorkflows')) || [];
-        }
-
-        function saveWorkflows(workflows) {
-            localStorage.setItem('approvalWorkflows', JSON.stringify(workflows));
-        }
-        
-        function generateSampleData() {
-            const sampleWorkflows = [
-                {
-                    id: 'sample1', active: true, workflow_name: 'QT Phê duyệt cho Kho', model: 'purchase.request',
-                    condition: null, notify_to: ['Phòng Kế toán'],
-                    levels: [
-                        { name: 'Chủ quản trực tiếp', approver_type: 'user', approvers: ['Ngọc Oanh'], approval_mode: 'all' },
-                        { name: 'Phó TGĐ (Kho & KD)', approver_type: 'user', approvers: ['Quang Lộc'], approval_mode: 'all' },
-                        { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
-                    ]
-                },
-                {
-                    id: 'sample2', active: true, workflow_name: 'QT Phê duyệt Điện nước (>20M)', model: 'purchase.order',
-                    condition: { field: 'amount_total', operator: '>=', value: 20000000 }, notify_to: ['Phòng Kế toán'],
-                    levels: [
-                        { name: 'Chủ quản trực tiếp', approver_type: 'user', approvers: ['Võ Huy Tài'], approval_mode: 'all' },
-                        { name: 'Phó TGĐ (Khối SX)', approver_type: 'user', approvers: ['Đình Phúc'], approval_mode: 'all' },
-                        { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
-                    ]
-                },
-                {
-                    id: 'sample3', active: false, workflow_name: 'QT Phê duyệt Sản xuất B5 (2 cấp)', model: 'purchase.request',
-                    condition: null, notify_to: [],
-                    levels: [
-                        { name: 'TP. Sản xuất B5', approver_type: 'user', approvers: ['Duy Phong'], approval_mode: 'all' },
-                        { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
-                    ]
-                },
-                {
-                    id: 'sample4', active: true, workflow_name: 'QT Thanh toán Marketing (< 10M)', model: 'payment.request',
-                    condition: { field: 'amount', operator: '<', value: 10000000 }, notify_to: ['Phòng Marketing'],
-                    levels: [
-                        { name: 'Trưởng phòng Marketing', approver_type: 'job_position', approvers: ['Phòng Kinh doanh'], approval_mode: 'all' },
-                        { name: 'Kế toán trưởng', approver_type: 'job_position', approvers: ['Phòng Kế toán'], approval_mode: 'all' }
-                    ]
-                },
-                {
-                    id: 'sample5', active: true, workflow_name: 'QT Mua hàng (Bất kỳ GĐ duyệt)', model: 'purchase.order',
-                    condition: null, notify_to: ['Phòng Kinh doanh', 'Phòng Kế toán'],
-                    levels: [
-                        { name: 'Ban Giám đốc', approver_type: 'user', approvers: ['Quang Lộc', 'Đình Phúc', 'Y Đạt'], approval_mode: 'any' }
-                    ]
-                },
-                {
-                    id: 'sample6', active: true, workflow_name: 'QT Mua sắm IT (đa duyệt)', model: 'purchase.request',
-                    condition: null, notify_to: [],
-                    levels: [
-                        { name: 'Trưởng phòng IT & Chủ quản', approver_type: 'user', approvers: ['Võ Huy Tài', 'Ngọc Oanh'], approval_mode: 'all' },
-                        { name: 'Phó TGĐ (Khối SX)', approver_type: 'user', approvers: ['Đình Phúc'], approval_mode: 'all' },
-                        { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
-                    ]
-                },
-                {
-                    id: 'sample7', active: true, workflow_name: 'QT Nhân sự (tỷ lệ)', model: 'payment.request',
-                    condition: null, notify_to: [],
-                    levels: [
-                        { name: 'Hội đồng nhân sự', approver_type: 'user', approvers: ['Trần Thị B', 'Lê Văn C', 'Phạm Thị D'], approval_mode: 'percentage', required_percentage: 67 },
-                        { name: 'P.TGĐ HCQT', approver_type: 'user', approvers: ['Y Đạt'], approval_mode: 'all' }
-                    ]
-                }
-            ];
-            saveWorkflows(sampleWorkflows);
-        }
-
-        // --- Core Functions ---
-        function renderWorkflowList() {
-            const workflows = getWorkflows();
-            workflowListContainer.innerHTML = '';
-            if (workflows.length === 0) {
-                workflowListContainer.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg">
-                    <h3 class="text-lg font-medium text-gray-800">Chưa có quy trình nào.</h3>
-                    <p class="mt-1 text-sm text-gray-500">Hãy nhấn "Tạo Quy trình Mới" để bắt đầu.</p>
-                </div>`;
+        function renderCheckinList(data) {
+            checkinList.innerHTML = '';
+            const totalCount = data.length;
+            if (totalCount === 0) {
+                checkinList.innerHTML = `<div class="text-center text-slate-500 p-4">Không có dữ liệu.</div>`;
+                checkinListTitle.textContent = `Danh sách Check-in`;
+                checkinSummary.textContent = `Tổng số: 0`;
                 return;
             }
-
-            workflows.forEach(w => {
-                let conditionText = 'Không có';
-                if (w.condition) {
-                    const fieldName = modelFields[w.model]?.[w.condition.field] || w.condition.field;
-                    const formattedValue = w.condition.value.toLocaleString('en-US');
-                    conditionText = `${fieldName} ${w.condition.operator} ${formattedValue}`;
+            const employeeName = employeeFilter.value !== 'all' ? employees.find(e => e.id === employeeFilter.value).name : '';
+            checkinListTitle.textContent = employeeName ? `Lộ trình của ${employeeName}` : `Danh sách Check-in`;
+            checkinSummary.textContent = `Tổng số: ${totalCount}`;
+            data.forEach((item) => {
+                const employee = employees.find(e => e.id === item.employeeId);
+                const time = new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                const itemEl = document.createElement('div');
+                itemEl.className = 'p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-all duration-200';
+                itemEl.dataset.lat = item.location.lat;
+                itemEl.dataset.lng = item.location.lng;
+                itemEl.dataset.checkinId = item.id;
+                const customerType = getCustomerType(item);
+                const typeInfo = customerTypeConfig[customerType];
+                let customerBadge = '';
+                if (item.isPotential) {
+                    customerBadge = `<span class="text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block" style="background-color:${typeInfo.color}20; color:${typeInfo.color};">${typeInfo.name}</span>`;
                 }
-                const notifyText = w.notify_to && w.notify_to.length > 0 ? w.notify_to.join(', ') : 'Không có';
-
-                const item = document.createElement('div');
-                item.className = 'bg-white p-4 rounded-lg shadow-sm border';
-                item.innerHTML = `
-                    <div class="flex justify-between items-center mb-2">
-                        <div class="flex items-center gap-3 flex-wrap">
-                             <p class="font-bold text-indigo-700">${w.workflow_name}</p>
-                             <span class="text-xs font-medium px-2 py-0.5 rounded-full ${w.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                                ${w.active ? 'Hoạt động' : 'Không hoạt động'}
-                            </span>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <label class="relative inline-flex items-center cursor-pointer" title="Bật/Tắt quy trình">
-                              <input type="checkbox" class="sr-only peer status-toggle" ${w.active ? 'checked' : ''} data-id="${w.id}">
-                              <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                            </label>
-                            <button class="edit-btn p-1 text-gray-500 hover:text-indigo-600" data-id="${w.id}" title="Sửa">
-                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" /></svg>
-                            </button>
-                            <button class="delete-btn p-1 text-gray-500 hover:text-red-600" data-id="${w.id}" title="Xóa">
-                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
-                            </button>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-500">Áp dụng cho: <b>${modelNames[w.model]}</b> | ${w.levels.length} cấp duyệt</p>
-                    <p class="text-sm text-gray-500 mt-1">Điều kiện: <span class="font-mono text-xs bg-gray-100 p-1 rounded">${conditionText}</span></p>
-                    <p class="text-sm text-gray-500 mt-1">Thông báo: <span class="text-xs italic">${notifyText}</span></p>
-                `;
-                workflowListContainer.appendChild(item);
-            });
-            
-            document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', (e) => showFormView(e.currentTarget.dataset.id)));
-            document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => deleteWorkflow(e.currentTarget.dataset.id)));
-            document.querySelectorAll('.status-toggle').forEach(toggle => toggle.addEventListener('change', (e) => toggleWorkflowStatus(e.target.dataset.id, e.target.checked)));
-        }
-
-        function addLevel(levelData = {}) {
-            levelCounter++;
-            const levelId = `level-${levelCounter}`;
-            const levelCard = document.createElement('div');
-            levelCard.className = 'p-4 border border-gray-200 rounded-lg bg-gray-50 level-card';
-            levelCard.id = levelId;
-            
-            const approverType = levelData.approver_type || 'user';
-            const requiredPercentage = levelData.approval_mode === 'percentage' ? (levelData.required_percentage || '50') : '50';
-            const percentageDisplay = levelData.approval_mode === 'percentage' ? 'block' : 'none';
-
-            levelCard.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <p class="font-semibold text-md text-indigo-700">Cấp ${levelCounter}</p>
-                    <button type="button" class="text-gray-400 hover:text-red-600" onclick="document.getElementById('${levelId}').remove()">
-                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Tên cấp duyệt (*)</label>
-                        <input type="text" name="level-name" class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="${levelData.name || ''}" placeholder="VD: Trưởng phòng duyệt">
-                    </div>
-                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Chỉ định phê duyệt (*)</label>
-                        <select name="approver-type" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
-                            <option value="user" ${approverType === 'user' ? 'selected' : ''}>Cố định người phê duyệt</option>
-                            <option value="job_position" ${approverType === 'job_position' ? 'selected' : ''}>Phòng ban phê duyệt</option>
-                        </select>
-                        <p name="approver-type-hint" class="mt-1 text-xs text-gray-500"></p>
-                    </div>
-                    <div name="by-name-wrapper" class="tag-input-wrapper">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tên người duyệt (*)</label>
-                        <div class="tag-input-container">
-                            <input type="text" class="tag-input-field" placeholder="Tìm kiếm người duyệt...">
-                        </div>
-                        <div class="suggestions-list hidden"></div>
-                    </div>
-                     <div name="by-job-wrapper" class="tag-input-wrapper">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Tên phòng ban (*)</label>
-                        <div class="tag-input-container">
-                             <input type="text" class="tag-input-field" placeholder="Tìm kiếm phòng ban...">
-                        </div>
-                        <div class="suggestions-list hidden"></div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Điều kiện duyệt (*)</label>
-                        <select name="approval-mode" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
-                            <option value="all" ${levelData.approval_mode === 'all' ? 'selected' : ''}>Tất cả (All)</option>
-                            <option value="any" ${levelData.approval_mode === 'any' ? 'selected' : ''}>Bất kỳ (Any)</option>
-                            <option value="percentage" ${levelData.approval_mode === 'percentage' ? 'selected' : ''}>Theo tỷ lệ (%)</option>
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500"><b>All:</b> 100% người được chỉ định phải duyệt.<br><b>Any:</b> Chỉ cần 1 người duyệt là đủ.<br><b>Percentage:</b> Đạt một tỷ lệ % người duyệt.</p>
-                    </div>
-                    <div name="percentage-wrapper" style="display: ${percentageDisplay};">
-                        <label class="block text-sm font-medium text-gray-700">Tỷ lệ yêu cầu (%)</label>
-                        <input type="number" name="required-percentage" class="mt-1 w-full p-2 border border-gray-300 rounded-md" value="${requiredPercentage}" min="1" max="100">
-                    </div>
-                </div>
-            `;
-            levelsContainer.appendChild(levelCard);
-            
-            initializeTagInput(levelCard.querySelector('div[name="by-name-wrapper"]'), allUsers, levelData.approver_type === 'user' ? levelData.approvers : []);
-            initializeTagInput(levelCard.querySelector('div[name="by-job-wrapper"]'), allDepartments, levelData.approver_type === 'job_position' ? levelData.approvers : []);
-
-            const approverTypeSelect = levelCard.querySelector('select[name="approver-type"]');
-            const approverTypeHint = levelCard.querySelector('p[name="approver-type-hint"]');
-            const byNameWrapper = levelCard.querySelector('div[name="by-name-wrapper"]');
-            const byJobWrapper = levelCard.querySelector('div[name="by-job-wrapper"]');
-            
-            const updateApproverUI = (selectedValue) => {
-                if (selectedValue === 'user') {
-                    approverTypeHint.textContent = 'Chỉ định một hoặc nhiều người dùng cụ thể, cố định.';
-                    byNameWrapper.style.display = 'block';
-                    byJobWrapper.style.display = 'none';
-                } else {
-                    approverTypeHint.textContent = 'Chọn các phòng ban, và người duyệt sẽ là Trưởng phòng của các phòng ban đó.';
-                    byNameWrapper.style.display = 'none';
-                    byJobWrapper.style.display = 'block';
-                }
-            };
-
-            approverTypeSelect.addEventListener('change', (e) => updateApproverUI(e.target.value));
-            updateApproverUI(approverTypeSelect.value);
-
-            levelCard.querySelector('select[name="approval-mode"]').addEventListener('change', (e) => {
-                const percentageWrapper = levelCard.querySelector('div[name="percentage-wrapper"]');
-                percentageWrapper.style.display = e.target.value === 'percentage' ? 'block' : 'none';
-            });
-        }
-        
-        function initializeTagInput(wrapper, dataSource, initialTags = []) {
-            const container = wrapper.querySelector('.tag-input-container');
-            const input = wrapper.querySelector('.tag-input-field');
-            const suggestionsList = wrapper.querySelector('.suggestions-list');
-            let tags = [];
-
-            const addTag = (value) => {
-                if (value && !tags.includes(value)) {
-                    tags.push(value);
-                    const tagEl = document.createElement('span');
-                    tagEl.className = 'tag-item';
-                    tagEl.innerHTML = `${value}<span class="tag-remove-btn" data-value="${value}">&times;</span>`;
-                    container.insertBefore(tagEl, input);
-                    input.value = '';
-                    suggestionsList.classList.add('hidden');
-
-                    tagEl.querySelector('.tag-remove-btn').addEventListener('click', (e) => {
-                        const valToRemove = e.target.getAttribute('data-value');
-                        tags = tags.filter(t => t !== valToRemove);
-                        e.target.parentElement.remove();
-                    });
-                }
-            };
-            
-            initialTags.forEach(addTag);
-            wrapper.getTags = () => tags;
-
-            input.addEventListener('input', () => {
-                const query = input.value.toLowerCase();
-                if (query.length === 0) {
-                    suggestionsList.classList.add('hidden');
-                    return;
-                }
-                const filteredData = dataSource.filter(item => 
-                    item.toLowerCase().includes(query) && !tags.includes(item)
-                );
-                suggestionsList.innerHTML = '';
-                if (filteredData.length > 0) {
-                    filteredData.forEach(item => {
-                        const suggestionEl = document.createElement('div');
-                        suggestionEl.className = 'suggestion-item';
-                        suggestionEl.textContent = item;
-                        suggestionEl.addEventListener('click', () => addTag(item));
-                        suggestionsList.appendChild(suggestionEl);
-                    });
-                    suggestionsList.classList.remove('hidden');
-                } else {
-                    suggestionsList.classList.add('hidden');
-                }
-            });
-            
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && input.value) {
-                    e.preventDefault();
-                    addTag(input.value);
-                } else if (e.key === 'Backspace' && input.value === '' && tags.length > 0) {
-                    tags.pop();
-                    container.querySelector('.tag-item:last-of-type')?.remove();
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!wrapper.contains(e.target)) {
-                    suggestionsList.classList.add('hidden');
-                }
-            });
-        }
-
-        function saveWorkflow() {
-            const workflowName = workflowNameInput.value.trim();
-            if (!workflowName) {
-                alert('Vui lòng nhập tên quy trình.');
-                return;
-            }
-
-            const levels = [];
-            const levelCards = levelsContainer.querySelectorAll('.level-card');
-            
-            for (let i = 0; i < levelCards.length; i++) {
-                const card = levelCards[i];
-                const name = card.querySelector('input[name="level-name"]').value.trim();
-                const approver_type = card.querySelector('select[name="approver-type"]').value;
-                const approvers = approver_type === 'user' 
-                    ? card.querySelector('div[name="by-name-wrapper"]').getTags()
-                    : card.querySelector('div[name="by-job-wrapper"]').getTags();
-
-                const approval_mode = card.querySelector('select[name="approval-mode"]').value;
-                const required_percentage = card.querySelector('input[name="required-percentage"]').value;
-
-                if (!name || approvers.length === 0) {
-                    alert(`Vui lòng điền đầy đủ thông tin cho Cấp ${i + 1}.`);
-                    return;
-                }
-
-                levels.push({
-                    sequence: (i + 1) * 10, name, approver_type, approvers, approval_mode,
-                    required_percentage: approval_mode === 'percentage' ? parseFloat(required_percentage) : null,
+                itemEl.innerHTML = `<div class="flex justify-between items-start"><div class="flex-grow"><p class="font-semibold text-sky-700">${item.storeName}</p><p class="text-sm text-slate-600">${item.customerName}</p>${employeeFilter.value === 'all' ? `<p class="text-xs text-slate-500 pt-1"><i class="fas fa-user mr-1"></i>${employee.name}</p>` : ''}</div><div class="text-right flex-shrink-0 ml-2"><p class="text-sm font-medium text-slate-800">${time}</p>${customerBadge}</div></div><div class="mt-2 text-sm text-slate-700"><p><strong>Công việc:</strong> ${item.taskContent}</p></div>`;
+                itemEl.addEventListener('click', () => {
+                    map.setView([item.location.lat, item.location.lng], 16);
+                    document.querySelectorAll('#checkin-list > div').forEach(el => el.classList.remove('list-item-selected'));
+                    itemEl.classList.add('list-item-selected');
                 });
-            }
+                checkinList.appendChild(itemEl);
+            });
+        }
 
-            if (levels.length === 0) {
-                alert('Quy trình phải có ít nhất một cấp phê duyệt.');
-                return;
+        function renderMap(data) {
+            markersLayer.clearLayers();
+            if (data.length === 0) return;
+            data.forEach(item => {
+                const type = getCustomerType(item);
+                const typeInfo = customerTypeConfig[type];
+                const markerIcon = L.divIcon({ className: 'leaflet-div-icon', iconSize: [16, 16], html: `<div style="background-color: ${typeInfo.color}; width:100%; height:100%; border-radius:50%;"></div>` });
+                const marker = L.marker([item.location.lat, item.location.lng], { icon: markerIcon }).addTo(markersLayer);
+                marker.bindTooltip(item.storeName, { permanent: true, direction: 'bottom', offset: [0, 10], className: 'customer-label' }).openTooltip();
+                const employee = employees.find(e => e.id === item.employeeId);
+                const time = new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                marker.bindPopup(`<b>${item.storeName}</b><br>NV: ${employee.name}<br>Loại: ${typeInfo.name}<br>Thời gian: ${time}`);
+            });
+            if (data.length > 0) {
+                const groupBounds = markersLayer.getBounds();
+                if (Object.keys(groupBounds).length > 0) map.fitBounds(groupBounds.pad(0.2));
             }
-            
-            const notifyToList = notifyWrapper.getTags();
-
-            const newWorkflow = { 
-                workflow_name: workflowName, 
-                model: workflowModelSelect.value, 
-                levels: levels,
-                condition: null,
-                notify_to: notifyToList
+        }
+        
+        function renderLegend() {
+            if (legendControl) map.removeControl(legendControl);
+            legendControl = L.control({position: 'bottomright'});
+            legendControl.onAdd = function (map) {
+                const div = L.DomUtil.create('div', 'info legend');
+                let content = '<strong>Chú giải</strong><br>';
+                content += `<i style="background:${customerTypeConfig.potential.color}"></i> ${customerTypeConfig.potential.name}<br>`;
+                content += `<i style="background:${customerTypeConfig.regular.color}"></i> ${customerTypeConfig.regular.name}<br>`;
+                div.innerHTML = content;
+                return div;
             };
-            
-            const conditionField = conditionFieldSelect.value;
-            if (conditionField !== 'none') {
-                const conditionValue = conditionValueInput.value;
-                if (conditionValue.trim() !== '') {
-                    const rawValue = conditionValue.replace(/[^0-9]/g, '');
-                    newWorkflow.condition = {
-                        field: conditionField,
-                        operator: conditionOperatorSelect.value,
-                        value: parseFloat(rawValue)
-                    };
-                }
-            }
-
-            let workflows = getWorkflows();
-            if (currentEditingId) {
-                const index = workflows.findIndex(w => w.id === currentEditingId);
-                newWorkflow.active = workflows[index].active; // Preserve active status
-                workflows[index] = { id: currentEditingId, ...newWorkflow };
-            } else {
-                newWorkflow.id = Date.now().toString();
-                newWorkflow.active = true; // Default to active for new workflows
-                workflows.push(newWorkflow);
-            }
-            
-            saveWorkflows(workflows);
-            alert('Quy trình đã được lưu thành công!');
-            showListView();
+            legendControl.addTo(map);
         }
 
-        function deleteWorkflow(id) {
-            if (confirm('Bạn có chắc muốn xóa quy trình này?')) {
-                let workflows = getWorkflows();
-                workflows = workflows.filter(w => w.id !== id);
-                saveWorkflows(workflows);
-                renderWorkflowList();
+        function updateSalesDisplay() {
+            const selectedDate = dateFilter.value;
+            const selectedEmployee = employeeFilter.value;
+            const selectedRegion = regionFilter.value;
+            let filteredData = checkins.filter(c => c.timestamp && c.timestamp.startsWith(selectedDate));
+            if (selectedEmployee !== 'all') filteredData = filteredData.filter(c => c.employeeId === selectedEmployee);
+            if (selectedRegion !== 'all') filteredData = filteredData.filter(c => c.regionId === selectedRegion);
+            if (selectedRegion !== 'all') {
+                const region = regions.find(r => r.id === selectedRegion);
+                if (region) map.setView(region.center, region.zoom);
+            } else if (filteredData.length === 0) {
+                 map.setView([16.0544, 108.2022], 13);
             }
-        }
-        
-        function toggleWorkflowStatus(id, isActive) {
-            let workflows = getWorkflows();
-            const index = workflows.findIndex(w => w.id === id);
-            if (index !== -1) {
-                workflows[index].active = isActive;
-                saveWorkflows(workflows);
-                renderWorkflowList();
-            }
-        }
-        
-        function showConfirmationModal(action, callback) {
-            currentActionCallback = callback;
-            modalReason.classList.remove('border-red-500');
-            modalError.classList.add('hidden');
-
-            if (action === 'reject') {
-                modalTitle.textContent = 'Xác nhận Từ chối';
-                modalDescription.textContent = 'Vui lòng nhập lý do từ chối.';
-                modalReason.required = true;
-                modalReason.placeholder = 'Lý do từ chối (bắt buộc)...';
-                modalConfirmBtn.className = 'px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700';
-            } else {
-                modalTitle.textContent = 'Xác nhận Phê duyệt';
-                modalDescription.textContent = 'Bạn có thể nhập ghi chú hoặc chỉ đạo (tùy chọn).';
-                modalReason.required = false;
-                modalReason.placeholder = 'Ghi chú (tùy chọn)...';
-                modalConfirmBtn.className = 'px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700';
-            }
-            modalReason.value = '';
-            modal.classList.remove('hidden');
+            const sortedData = filteredData.sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            renderCheckinList(sortedData);
+            renderMap(sortedData);
         }
 
-        function renderApplicantView(workflowId) {
-            const workflows = getWorkflows();
-            const activeWorkflows = workflows.filter(w => w.active);
-
-            if (activeWorkflows.length === 0) {
-                noWorkflowSelected.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg">
-                    <h3 class="text-lg font-medium text-gray-800">Không có quy trình nào đang hoạt động.</h3>
-                    <p class="mt-1 text-sm text-gray-500">Vui lòng quay lại tab "Quản lý Quy trình" để kích hoạt hoặc tạo mới.</p>
-                </div>`;
-                noWorkflowSelected.classList.remove('hidden');
-                approvalViewContent.classList.add('hidden');
-                return;
-            }
-            
-            const selectedId = workflowId || workflowSelector.value;
-            const workflow = activeWorkflows.find(w => w.id === selectedId);
-            
-            if (!workflow) {
-                noWorkflowSelected.classList.remove('hidden');
-                approvalViewContent.classList.add('hidden');
-                return;
-            }
-            
-            noWorkflowSelected.classList.add('hidden');
-            approvalViewContent.classList.remove('hidden');
-
-            const record = sampleRecord[workflow.model];
-            applicantTitle.textContent = `${modelNames[workflow.model]}: ${record.id}`;
-            const subtitleData = Object.entries(record.data).map(([key, val]) => `${modelFields[workflow.model][key]}: ${val.toLocaleString('en-US')}`).join(' | ');
-            applicantSubtitle.textContent = `Người yêu cầu: Nguyễn Văn A | ${subtitleData}`;
-            requestContentContainer.innerHTML = record.content;
-            
-            let conditionMet = true;
-            if (workflow.condition) {
-                const { field, operator, value } = workflow.condition;
-                const recordValue = record.data[field];
-                
-                switch(operator) {
-                    case '>=': conditionMet = recordValue >= value; break;
-                    case '<=': conditionMet = recordValue <= value; break;
-                    case '>': conditionMet = recordValue > value; break;
-                    case '<': conditionMet = recordValue < value; break;
-                    case '==': conditionMet = recordValue == value; break;
-                    case '!=': conditionMet = recordValue != value; break;
-                }
-                
-                const fieldName = modelFields[workflow.model][field];
-                const resultText = conditionMet ? 'Thỏa mãn' : 'Không thỏa mãn';
-                const resultColor = conditionMet ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
-
-                conditionCheckContainer.innerHTML = `
-                    <div class="p-3 rounded-lg ${resultColor}">
-                        <p class="font-semibold">Kiểm tra điều kiện: <span class="font-bold">${resultText}</span></p>
-                        <p class="text-sm">Quy trình yêu cầu: <span class="font-mono text-xs bg-white p-1 rounded">${fieldName} ${operator} ${value.toLocaleString('en-US')}</span></p>
-                        <p class="text-sm">Dữ liệu thực tế: <span class="font-mono text-xs bg-white p-1 rounded">${fieldName} = ${recordValue.toLocaleString('en-US')}</span></p>
-                    </div>
-                `;
-            } else {
-                conditionCheckContainer.innerHTML = `
-                    <div class="p-3 rounded-lg text-blue-600 bg-blue-100">
-                        <p class="font-semibold">Quy trình này không có điều kiện áp dụng.</p>
-                    </div>
-                `;
-            }
-
-            if (!conditionMet) {
-                workflowFlowchartContainer.innerHTML = `<div class="text-center p-8 border-2 border-dashed rounded-lg border-yellow-400 bg-yellow-50">
-                    <h3 class="text-lg font-medium text-yellow-800">Quy trình không được áp dụng.</h3>
-                    <p class="mt-1 text-sm text-yellow-700">Bản ghi không thỏa mãn điều kiện đã được cấu hình.</p>
-                </div>`;
-                mainApproveBtn.disabled = true;
-                mainRejectBtn.disabled = true;
-                return;
-            }
-            
-            mainApproveBtn.disabled = false;
-            mainRejectBtn.disabled = false;
-
-            const simulationWorkflow = JSON.parse(JSON.stringify(workflow));
-            simulationWorkflow.levels.forEach(level => {
-                level.status = 'future';
-                level.approved_by = [];
-                level.rejected_by = [];
-                level.skipped_by = [];
-                level.comments = {};
-            });
-            if (simulationWorkflow.levels.length > 0) {
-                simulationWorkflow.levels[0].status = 'pending';
-            }
-            window.simulationState = simulationWorkflow;
-            renderSimulationFromState(simulationWorkflow);
+        // --- TASK MANAGEMENT LOGIC ---
+        function resetTaskFilters() {
+            currentTaskFilter = 'all'; 
+            taskAssigneeFilter.value = 'all';
+            taskAssignerFilter.value = 'all';
+            taskGroupFilter.value = 'all';
+            taskTagFilter.value = 'all';
+            taskStartDateFilter.value = '';
+            taskEndDateFilter.value = '';
         }
 
-        function processApproval(levelIndex, approver, action, reason) {
-            const simulationWorkflow = window.simulationState;
-            if (!simulationWorkflow) return;
-            
-            const level = simulationWorkflow.levels[levelIndex];
-            
-            if (level.status === 'approved' || level.status === 'rejected') return;
-
-            if (reason) {
-                level.comments[approver] = reason;
-            }
-
-            if (action === 'reject') {
-                if (!level.rejected_by.includes(approver)) level.rejected_by.push(approver);
-                level.status = 'rejected';
-                renderSimulationFromState(simulationWorkflow);
-                const notificationList = 'Người tạo phiếu (Nguyễn Văn A)';
-                setTimeout(() => alert(`Quy trình đã bị TỪ CHỐI.\n\nĐã gửi thông báo đến: ${notificationList}`), 100);
-                return;
-            }
-            
-            if (action === 'approve') {
-                if (!level.approved_by.includes(approver)) level.approved_by.push(approver);
-            }
-
-            let isCompleted = false;
-            const totalApprovers = level.approvers.length;
-            const approvedCount = level.approved_by.length;
-
-            switch(level.approval_mode) {
-                case 'any': 
-                    if (approvedCount >= 1) isCompleted = true; 
-                    break;
-                case 'all': 
-                    if (approvedCount === totalApprovers) isCompleted = true; 
-                    break;
-                case 'percentage':
-                    if ((approvedCount / totalApprovers) * 100 >= level.required_percentage) isCompleted = true;
-                    break;
-            }
-
-            if (isCompleted) {
-                level.status = 'approved';
-                if (level.approval_mode === 'any') {
-                    level.approvers.forEach(a => {
-                        if (!level.approved_by.includes(a)) {
-                            level.skipped_by.push(a);
-                        }
-                    });
-                }
-
-                if (simulationWorkflow.levels[levelIndex + 1]) {
-                    simulationWorkflow.levels[levelIndex + 1].status = 'pending';
-                } else {
-                    const notificationList = ['Người tạo phiếu (Nguyễn Văn A)', ...(simulationWorkflow.notify_to || [])].join(', ');
-                    setTimeout(() => alert(`Quy trình đã được PHÊ DUYỆT hoàn tất!\n\nĐã gửi thông báo đến: ${notificationList}`), 100);
-                }
-            }
-            renderSimulationFromState(simulationWorkflow);
-        }
-
-        window.promptForApproval = function(levelIndex, approver, action) {
-            showConfirmationModal(action, (reason) => {
-                processApproval(levelIndex, approver, action, reason);
+        function updateTaskFilterTabs() {
+            document.querySelectorAll('.task-filter-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.filter === currentTaskFilter);
             });
         }
-        
-        function renderSimulationFromState(simulationWorkflow) {
-            let html = '<div class="space-y-4">';
-            let isAnyLevelPending = false;
-            simulationWorkflow.levels.forEach((level, index) => {
-                 let statusClass = '', statusText = '';
-                 let iconHtml = '';
-                switch(level.status) {
-                    case 'pending': 
-                        statusClass = 'status-pending'; statusText = 'Đang chờ duyệt'; isAnyLevelPending = true;
-                        iconHtml = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
-                        break;
-                    case 'approved': 
-                        statusClass = 'status-approved'; statusText = 'Đã phê duyệt';
-                        iconHtml = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>`;
-                        break;
-                    case 'rejected': 
-                        statusClass = 'status-rejected'; statusText = 'Đã từ chối';
-                        iconHtml = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
-                        break;
-                    default: 
-                        statusClass = 'status-future'; statusText = 'Chưa tới lượt';
-                        iconHtml = `<span class="text-xs font-bold">${index + 1}</span>`;
-                }
-                 let conditionText = '';
-                switch(level.approval_mode) {
-                    case 'all': conditionText = 'Tất cả'; break;
-                    case 'any': conditionText = 'Bất kỳ'; break;
-                    case 'percentage': conditionText = `${level.required_percentage}%`; break;
-                }
-                 html += `<div class="flowchart-node" data-level-index="${index}">
-                            <div class="flowchart-icon ${statusClass}">${iconHtml}</div>
-                            <div class="p-3 rounded-lg border bg-white">
-                                <div class="flex justify-between items-center">
-                                    <p class="font-bold text-gray-800">${level.name}</p>
-                                    <span class="text-xs font-bold uppercase px-2 py-1 rounded-full ${statusClass.replace('status-', 'approval-status-')}">${statusText}</span>
-                                </div>
-                                <p class="text-sm text-gray-500 mt-1">Điều kiện: ${conditionText}</p>
-                                <div class="mt-3 space-y-2">`;
-                const approverList = level.approver_type === 'job_position' ? level.approvers.map(dept => `Trưởng phòng ${dept}`) : level.approvers;
-                approverList.forEach(approver => {
-                    const originalApproverName = level.approver_type === 'job_position' ? level.approvers[approverList.indexOf(approver)] : approver;
-                    const hasApproved = level.approved_by.includes(originalApproverName);
-                    const hasRejected = level.rejected_by.includes(originalApproverName);
-                    const hasSkipped = level.skipped_by.includes(originalApproverName);
-                    const comment = level.comments?.[originalApproverName];
 
-                    let approverStatus = 'Chờ duyệt', approverStatusColor = 'text-gray-500';
-                    if (hasApproved) { approverStatus = 'Đã duyệt'; approverStatusColor = 'text-green-600'; } 
-                    else if (hasRejected) { approverStatus = 'Đã từ chối'; approverStatusColor = 'text-red-600'; }
-                    else if (hasSkipped) { approverStatus = 'Đã bỏ qua'; approverStatusColor = 'text-gray-400'; }
+        function renderTaskList(filteredTasks) {
+            taskListContainer.innerHTML = '';
+            if (filteredTasks.length === 0) {
+                taskListContainer.innerHTML = `<div class="text-center text-slate-500 p-8">Không có công việc nào phù hợp.</div>`;
+                return;
+            }
+            filteredTasks.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate)).forEach(task => {
+                const assignee = employees.find(e => e.id === task.assigneeId);
+                const isOverdue = task.status === 'incomplete' && new Date(task.dueDate) < new Date(todayStr);
+                const taskEl = document.createElement('div');
+                taskEl.className = `p-4 border border-slate-200 rounded-lg flex items-center justify-between hover:bg-slate-50 transition-colors duration-200 ${task.status === 'completed' ? 'bg-slate-100' : 'bg-white'}`;
+                
+                const mainContent = `
+                    <div class="flex items-center flex-grow">
+                        ${task.important ? '<i class="fas fa-star text-amber-500 mr-4"></i>' : '<i class="far fa-star text-slate-400 mr-4"></i>'}
+                        <div class="${task.status === 'completed' ? 'task-item-completed' : ''}">
+                            <p class="font-semibold text-slate-800">${task.name}</p>
+                            <p class="text-sm text-slate-500">Người thực hiện: ${assignee ? assignee.name : 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-4">
+                        <p class="text-sm font-medium ${isOverdue ? 'text-red-600' : 'text-slate-700'}">Hạn: ${new Date(task.dueDate).toLocaleDateString('vi-VN')}</p>
+                        <div class="flex flex-wrap justify-end gap-1 mt-1">
+                            ${task.tags.map(tag => `<span class="text-xs bg-slate-200 text-slate-800 px-2 py-0.5 rounded-full">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
 
-                     html += `<div class="p-2 bg-gray-50 rounded-md border">
-                            <div class="flex items-center justify-between flex-wrap gap-2">
-                                <div class="flex items-center flex-grow min-w-0">
-                                    <span class="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 mr-2 flex-shrink-0">${approver.charAt(0).toUpperCase()}</span>
-                                    <div class="min-w-0">
-                                        <p class="font-medium text-sm truncate">${approver}</p>
-                                        <p class="text-xs ${approverStatusColor}">${approverStatus}</p>
-                                    </div>
-                                </div>
-                                ${level.status === 'pending' && !hasApproved && !hasRejected && !hasSkipped ? `
-                                <div class="space-x-1 flex-shrink-0">
-                                    <button class="px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700" onclick="promptForApproval(${index}, '${originalApproverName}', 'approve')">Duyệt</button>
-                                    <button class="px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700" onclick="promptForApproval(${index}, '${originalApproverName}', 'reject')">Từ chối</button>
-                                </div>` : ''}
-                            </div>
-                            ${comment ? `<div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 italic">“${comment}”</div>` : ''}
-                        </div>`;
+                taskEl.innerHTML = `
+                    <div class="flex items-center flex-grow">
+                        <input type="checkbox" class="task-complete-toggle h-5 w-5 rounded border-slate-300 text-sky-600 focus:ring-sky-500 mr-4" data-task-id="${task.id}" ${task.status === 'completed' ? 'checked' : ''}>
+                        <div class="flex-grow cursor-pointer" data-task-id="${task.id}">
+                            ${mainContent}
+                        </div>
+                    </div>
+                `;
+                
+                taskEl.querySelector('.cursor-pointer').addEventListener('click', (e) => {
+                    const taskId = e.currentTarget.dataset.taskId;
+                    openTaskModal(parseInt(taskId));
                 });
-                html += `</div></div></div>`;
+                taskListContainer.appendChild(taskEl);
             });
-            html += '</div>';
-            workflowFlowchartContainer.innerHTML = html;
-            
-            mainApproveBtn.disabled = !isAnyLevelPending;
-            mainRejectBtn.disabled = !isAnyLevelPending;
+        }
+        
+        function updateTaskDisplay() {
+            updateTaskFilterTabs();
+            let filteredTasks = [...tasks];
+
+            // Tab filters
+            switch(currentTaskFilter) {
+                case 'important':
+                    filteredTasks = filteredTasks.filter(t => t.important);
+                    break;
+                case 'overdue':
+                    filteredTasks = filteredTasks.filter(t => t.status === 'incomplete' && new Date(t.dueDate) < new Date(todayStr));
+                    break;
+                case 'incomplete':
+                    filteredTasks = filteredTasks.filter(t => t.status === 'incomplete');
+                    break;
+                case 'completed':
+                    filteredTasks = filteredTasks.filter(t => t.status === 'completed');
+                    break;
+            }
+
+            // Advanced filters
+            const assigneeId = taskAssigneeFilter.value;
+            if (assigneeId !== 'all') {
+                filteredTasks = filteredTasks.filter(t => t.assigneeId === assigneeId);
+            }
+            const assignerId = taskAssignerFilter.value;
+            if (assignerId !== 'all') {
+                filteredTasks = filteredTasks.filter(t => t.assignerId === assignerId);
+            }
+            const group = taskGroupFilter.value;
+            if (group !== 'all') {
+                filteredTasks = filteredTasks.filter(t => t.group === group);
+            }
+            const tag = taskTagFilter.value;
+            if (tag !== 'all') {
+                filteredTasks = filteredTasks.filter(t => t.tags.includes(tag));
+            }
+            const startDate = taskStartDateFilter.value;
+            if (startDate) {
+                filteredTasks = filteredTasks.filter(t => t.dueDate >= startDate);
+            }
+            const endDate = taskEndDateFilter.value;
+            if (endDate) {
+                filteredTasks = filteredTasks.filter(t => t.dueDate <= endDate);
+            }
+
+            renderTaskList(filteredTasks);
         }
 
-        function populateWorkflowSelector() {
-            const workflows = getWorkflows();
-            const activeWorkflows = workflows.filter(w => w.active);
-            workflowSelector.innerHTML = '<option value="">-- Chọn quy trình --</option>';
-            if (activeWorkflows.length > 0) {
-                activeWorkflows.forEach(w => {
+        function populateTaskAdvancedFilters() {
+            // Assignee and Assigner
+            [taskAssigneeFilter, taskAssignerFilter].forEach(select => {
+                select.innerHTML = '<option value="all">Tất cả</option>';
+                employees.forEach(emp => {
                     const option = document.createElement('option');
-                    option.value = w.id;
-                    option.textContent = w.workflow_name;
-                    workflowSelector.appendChild(option);
+                    option.value = emp.id;
+                    option.textContent = emp.name;
+                    select.appendChild(option);
                 });
-            }
+            });
+
+            // Groups
+            taskGroupFilter.innerHTML = '<option value="all">Tất cả</option>';
+            const groups = [...new Set(tasks.map(t => t.group))];
+            groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group;
+                option.textContent = group;
+                taskGroupFilter.appendChild(option);
+            });
+
+            // Tags
+            taskTagFilter.innerHTML = '<option value="all">Tất cả</option>';
+            const tags = [...new Set(tasks.flatMap(t => t.tags))];
+            tags.forEach(tag => {
+                const option = document.createElement('option');
+                option.value = tag;
+                option.textContent = tag;
+                taskTagFilter.appendChild(option);
+            });
         }
-        
-        function switchTab(tab) {
-            if (tab === 'creator') {
-                creatorScreen.classList.remove('hidden');
-                applicationScreen.classList.add('hidden');
-                tabCreator.classList.add('active');
-                tabApplicant.classList.remove('active');
-                showListView();
-            } else {
-                creatorScreen.classList.add('hidden');
-                applicationScreen.classList.remove('hidden');
-                tabCreator.classList.remove('active');
-                tabApplicant.classList.add('active');
-                populateWorkflowSelector();
-                window.simulationState = null; 
-                renderApplicantView();
-            }
+
+        function populateTaskModalDropdowns() {
+            const assignerSelect = document.getElementById('task-assigner');
+            const assigneeSelect = document.getElementById('task-assignee');
+            assignerSelect.innerHTML = '';
+            assigneeSelect.innerHTML = '';
+            employees.forEach(emp => {
+                const option1 = document.createElement('option');
+                option1.value = emp.id;
+                option1.textContent = emp.name;
+                const option2 = option1.cloneNode(true);
+                assignerSelect.appendChild(option1);
+                assigneeSelect.appendChild(option2);
+            });
         }
-        
-        // Event Listeners
-        showFormBtn.addEventListener('click', () => showFormView());
-        cancelBtn.addEventListener('click', showListView);
-        addLevelBtn.addEventListener('click', () => addLevel());
-        saveWorkflowBtn.addEventListener('click', saveWorkflow);
-        tabCreator.addEventListener('click', () => switchTab('creator'));
-        tabApplicant.addEventListener('click', () => switchTab('applicant'));
-        workflowModelSelect.addEventListener('change', (e) => updateConditionFields(e.target.value));
-        workflowSelector.addEventListener('change', () => {
-            window.simulationState = null;
-            renderApplicantView();
-        });
-        conditionValueInput.addEventListener('input', (e) => {
-            let rawValue = e.target.value.replace(/[^0-9]/g, '');
-            if (rawValue) {
-                const formattedValue = parseInt(rawValue, 10).toLocaleString('en-US');
-                e.target.value = formattedValue;
+
+        function openTaskModal(taskId = null) {
+            const form = document.getElementById('task-form');
+            form.reset();
+            document.getElementById('task-due-date').value = todayStr;
+
+            if (taskId) {
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    document.getElementById('task-modal-title').textContent = 'Chỉnh sửa công việc';
+                    document.getElementById('task-id').value = task.id;
+                    document.getElementById('task-name').value = task.name;
+                    document.getElementById('task-assigner').value = task.assignerId;
+                    document.getElementById('task-assignee').value = task.assigneeId;
+                    document.getElementById('task-due-date').value = task.dueDate;
+                    document.getElementById('task-group').value = task.group;
+                    document.getElementById('task-content').value = task.content;
+                    document.getElementById('task-tags').value = task.tags.join(', ');
+                    document.getElementById('task-important').checked = task.important;
+                }
             } else {
-                e.target.value = '';
+                document.getElementById('task-modal-title').textContent = 'Tạo công việc mới';
             }
-        });
-        mainApproveBtn.addEventListener('click', () => {
-            const simulationWorkflow = window.simulationState;
-            if (!simulationWorkflow) return;
-            const pendingLevel = simulationWorkflow.levels.find(l => l.status === 'pending');
-            if(pendingLevel) {
-                const levelIndex = simulationWorkflow.levels.indexOf(pendingLevel);
-                const firstAvailableApprover = pendingLevel.approvers.find(a => 
-                    !pendingLevel.approved_by.includes(a) && 
-                    !pendingLevel.rejected_by.includes(a) &&
-                    !pendingLevel.skipped_by.includes(a)
-                );
-                if(firstAvailableApprover) {
-                    promptForApproval(levelIndex, firstAvailableApprover, 'approve');
+            taskModal.classList.remove('hidden');
+            taskModal.classList.add('flex');
+        }
+
+        function closeTaskModal() {
+            taskModal.classList.add('hidden');
+            taskModal.classList.remove('flex');
+        }
+
+        function saveTask() {
+            const id = document.getElementById('task-id').value;
+            const taskData = {
+                name: document.getElementById('task-name').value,
+                important: document.getElementById('task-important').checked,
+                assignerId: document.getElementById('task-assigner').value,
+                assigneeId: document.getElementById('task-assignee').value,
+                dueDate: document.getElementById('task-due-date').value,
+                group: document.getElementById('task-group').value,
+                content: document.getElementById('task-content').value,
+                tags: document.getElementById('task-tags').value.split(',').map(tag => tag.trim()).filter(Boolean),
+            };
+
+            if (id) {
+                const index = tasks.findIndex(t => t.id == id);
+                if (index !== -1) {
+                    tasks[index] = { ...tasks[index], ...taskData };
                 }
+            } else {
+                taskData.id = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+                taskData.status = 'incomplete'; // New tasks are always incomplete
+                tasks.push(taskData);
             }
-        });
-        mainRejectBtn.addEventListener('click', () => {
-            const simulationWorkflow = window.simulationState;
-            if (!simulationWorkflow) return;
-            const pendingLevel = simulationWorkflow.levels.find(l => l.status === 'pending');
-            if(pendingLevel) {
-                const levelIndex = simulationWorkflow.levels.indexOf(pendingLevel);
-                const firstAvailableApprover = pendingLevel.approvers.find(a => 
-                    !pendingLevel.approved_by.includes(a) && 
-                    !pendingLevel.rejected_by.includes(a) &&
-                    !pendingLevel.skipped_by.includes(a)
-                );
-                if(firstAvailableApprover) {
-                    promptForApproval(levelIndex, firstAvailableApprover, 'reject');
-                }
-            }
-        });
-        
-        // Modal Listeners
-        modalCancelBtn.addEventListener('click', () => modal.classList.add('hidden'));
-        modalConfirmBtn.addEventListener('click', () => {
-            const reason = modalReason.value.trim();
-            if(modalReason.required && !reason) {
-                modalReason.classList.add('border-red-500');
-                modalError.classList.remove('hidden');
-                return;
-            }
-            if(currentActionCallback) {
-                currentActionCallback(reason);
-            }
-            modal.classList.add('hidden');
-            currentActionCallback = null;
-        });
-        modalReason.addEventListener('input', () => {
-            if (modalReason.classList.contains('border-red-500')) {
-                modalReason.classList.remove('border-red-500');
-                modalError.classList.add('hidden');
+            populateTaskAdvancedFilters(); // Repopulate in case of new group/tag
+            updateTaskDisplay();
+            closeTaskModal();
+        }
+
+        taskFilterNav.addEventListener('click', (e) => {
+            if (e.target.matches('.task-filter-tab')) {
+                currentTaskFilter = e.target.dataset.filter;
+                updateTaskDisplay();
             }
         });
 
+        taskListContainer.addEventListener('change', e => {
+            if (e.target.matches('.task-complete-toggle')) {
+                const taskId = parseInt(e.target.dataset.taskId);
+                const task = tasks.find(t => t.id === taskId);
+                if (task) {
+                    task.status = e.target.checked ? 'completed' : 'incomplete';
+                    updateTaskDisplay();
+                }
+            }
+        });
 
-        // Initial Load
-        if (getWorkflows().length === 0) {
-            generateSampleData();
-        }
-        showListView();
+        [taskAssigneeFilter, taskAssignerFilter, taskGroupFilter, taskTagFilter, taskStartDateFilter, taskEndDateFilter].forEach(el => {
+            el.addEventListener('change', updateTaskDisplay);
+        });
+
+        btnCreateTask.addEventListener('click', () => openTaskModal());
+        btnCancelTask.addEventListener('click', closeTaskModal);
+        btnSaveTask.addEventListener('click', saveTask);
+        
+        // --- INITIAL LOAD ---
+        switchPage('page-sales-dashboard');
+        populateTaskModalDropdowns();
     });
     </script>
 </body>
