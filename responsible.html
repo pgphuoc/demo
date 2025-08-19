@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infographic: Phân Tích Vai Trò Dự Án (RACI)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 320px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+                max-height: 400px;
+            }
+        }
+        .flowchart-step {
+            border: 2px solid;
+            min-height: 140px;
+        }
+        .flowchart-arrow {
+            font-size: 2.5rem;
+            line-height: 1;
+        }
+        .raci-cell {
+            font-weight: bold;
+            text-align: center;
+            border-radius: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            color: white;
+            min-width: 30px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <header class="bg-[#003F5C] text-white p-8 text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-2">Phân Tích Vai Trò & Trách Nhiệm Dự Án</h1>
+        <p class="text-xl md:text-2xl text-gray-300">Sử dụng Ma trận RACI để Tối ưu Hiệu suất</p>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+
+        <section id="intro" class="text-center mb-12">
+            <div class="bg-white rounded-lg shadow-md p-8 max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-[#003F5C] mb-4">Tại sao RACI lại Quan trọng?</h2>
+                <p class="text-lg mb-6">Ma trận RACI giúp loại bỏ sự mơ hồ bằng cách xác định rõ ai <strong>Thực hiện (R)</strong>, ai <strong>Chịu trách nhiệm cuối cùng (A)</strong>, ai cần được <strong>Tư vấn (C)</strong> và ai cần được <strong>Thông báo (I)</strong>. Điều này giúp tăng cường giao tiếp, giảm thiểu xung đột và đảm bảo mọi người đều hiểu rõ vai trò của mình.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <div class="text-6xl font-bold text-[#FFA600]">90%</div>
+                        <p class="mt-2 font-semibold">Dự án thành công hơn khi có vai trò rõ ràng.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <div class="text-6xl font-bold text-[#EF5675]">35%</div>
+                        <p class="mt-2 font-semibold">Thời gian được tiết kiệm khi giảm thiểu chồng chéo công việc.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="raci-matrix-overview" class="mb-12">
+            <h2 class="text-3xl font-bold text-center text-[#003F5C] mb-8">Bảng RACI Tổng quan</h2>
+            <p class="text-center text-lg max-w-3xl mx-auto mb-10">Để có cái nhìn chi tiết và tổng thể, bảng dưới đây liệt kê các công việc chính trong dự án và gán trách nhiệm cụ thể cho từng vai trò. Sử dụng bảng này để tra cứu nhanh khi cần xác định vai trò trong một nhiệm vụ cụ thể.</p>
+            <div class="bg-white rounded-lg shadow-md p-4 md:p-6">
+                <div class="flex flex-wrap justify-center gap-4 mb-6">
+                    <div><span class="raci-cell bg-[#EF5675]">R</span> = Responsible (Thực hiện)</div>
+                    <div><span class="raci-cell bg-[#FFA600]">A</span> = Accountable (Chịu trách nhiệm)</div>
+                    <div><span class="raci-cell bg-[#7A5195]">C</span> = Consulted (Tư vấn)</div>
+                    <div><span class="raci-cell bg-[#374C80]">I</span> = Informed (Thông báo)</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[800px] text-sm text-left text-gray-600">
+                        <thead class="text-xs text-white uppercase bg-[#003F5C]">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Công việc / Giai đoạn</th>
+                                <th scope="col" class="px-6 py-3 text-center">PO</th>
+                                <th scope="col" class="px-6 py-3 text-center">PM</th>
+                                <th scope="col" class="px-6 py-3 text-center">BA</th>
+                                <th scope="col" class="px-6 py-3 text-center">Design</th>
+                                <th scope="col" class="px-6 py-3 text-center">Dev</th>
+                                <th scope="col" class="px-6 py-3 text-center">Tester</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-gray-50 border-b"><td colspan="7" class="px-6 py-2 font-bold text-gray-700">1. Khởi tạo & Lập kế hoạch</td></tr>
+                            <tr class="bg-white border-b"><td class="px-6 py-4">Xác định Tầm nhìn & Mục tiêu Sản phẩm</td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td></tr>
+                            <tr class="bg-gray-50 border-b"><td class="px-6 py-4">Xây dựng Kế hoạch Quản lý Dự án</td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#EF5675]" title="Responsible (Thực hiện)">R</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td></tr>
+                            <tr class="bg-white border-b"><td colspan="7" class="px-6 py-2 font-bold text-gray-700">2. Phân tích & Thiết kế</td></tr>
+                            <tr class="bg-gray-50 border-b"><td class="px-6 py-4">Thu thập & Phân tích Yêu cầu</td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td></tr>
+                            <tr class="bg-white border-b"><td class="px-6 py-4">Xây dựng User Stories & AC</td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#EF5675]" title="Responsible (Thực hiện)">R</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td></tr>
+                            <tr class="bg-gray-50 border-b"><td class="px-6 py-4">Thiết kế UX/UI & Prototype</td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td></tr>
+                            <tr class="bg-white border-b"><td colspan="7" class="px-6 py-2 font-bold text-gray-700">3. Phát triển</td></tr>
+                            <tr class="bg-gray-50 border-b"><td class="px-6 py-4">Phát triển Frontend & Backend</td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td></tr>
+                            <tr class="bg-white border-b"><td colspan="7" class="px-6 py-2 font-bold text-gray-700">4. Kiểm thử</td></tr>
+                            <tr class="bg-gray-50 border-b"><td class="px-6 py-4">Viết & Thực hiện Test Case</td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#EF5675]" title="Responsible (Thực hiện)">R</span></td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td></tr>
+                            <tr class="bg-white border-b"><td class="px-6 py-4">Kiểm thử Chấp nhận (UAT)</td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#EF5675]" title="Responsible (Thực hiện)">R</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#EF5675]" title="Responsible (Thực hiện)">R</span></td></tr>
+                            <tr class="bg-gray-50 border-b"><td colspan="7" class="px-6 py-2 font-bold text-gray-700">5. Triển khai & Vận hành</td></tr>
+                             <tr class="bg-white border-b"><td class="px-6 py-4">Thực hiện Deploy</td><td class="text-center"><span class="raci-cell bg-[#7A5195]" title="Consulted (Tư vấn)">C</span></td><td class="text-center"><span class="raci-cell bg-[#FFA600]" title="Accountable (Chịu trách nhiệm)">A</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#374C80]" title="Informed (Thông báo)">I</span></td><td class="text-center"><span class="raci-cell bg-[#EF5675]" title="Responsible (Thực hiện)">R</span></td><td class="text-center"><span class="raci-cell bg-[#EF5675]" title="Responsible (Thực hiện)">R</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="ba-vs-design" class="mb-12">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-3xl font-bold text-center text-[#003F5C] mb-4">Phân định Ranh giới: BA và Design</h2>
+                <p class="text-center text-lg max-w-3xl mx-auto mb-10">Một trong những điểm dễ chồng chéo nhất là giữa BA và Design. Quy trình dưới đây làm rõ sự khác biệt và điểm chuyển giao công việc giữa hai vai trò: BA tập trung vào "Làm CÁI GÌ?" và Design tập trung vào "Làm NHƯ THẾ NÀO?".</p>
+                <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-0">
+                    <div class="w-full md:w-1/3 text-center p-4">
+                        <div class="flowchart-step border-[#7A5195] rounded-lg p-4 flex flex-col justify-center items-center">
+                            <h4 class="text-lg font-bold text-[#7A5195]">Business Analyst (BA)</h4>
+                            <p class="mt-2 text-sm">Định nghĩa yêu cầu nghiệp vụ, logic, và quy tắc. Trả lời câu hỏi "WHAT?".</p>
+                            <p class="font-bold mt-2 text-sm">Output: Function Spec (BRD, SRS), Business Flow, User Stories, Acceptance Criteria.</p>
+                        </div>
+                    </div>
+                    <div class="text-[#FFA600] flowchart-arrow transform md:-rotate-0 rotate-90">➔</div>
+                    <div class="w-full md:w-1/3 text-center p-4">
+                        <div class="flowchart-step border-[#BC5090] rounded-lg p-4 flex flex-col justify-center items-center">
+                            <h4 class="text-lg font-bold text-[#BC5090]">UI/UX Designer</h4>
+                            <p class="mt-2 text-sm">Thiết kế trải nghiệm và giao diện người dùng. Trả lời câu hỏi "HOW?".</p>
+                            <p class="font-bold mt-2 text-sm">Output: Wireframes, Prototypes, UI Design, User Flow (Screen Transition).</p>
+                        </div>
+                    </div>
+                    <div class="text-[#FFA600] flowchart-arrow transform md:-rotate-0 rotate-90">➔</div>
+                    <div class="w-full md:w-1/3 text-center p-4">
+                        <div class="flowchart-step border-[#EF5675] rounded-lg p-4 flex flex-col justify-center items-center">
+                            <h4 class="text-lg font-bold text-[#EF5675]">Development Team</h4>
+                            <p class="mt-2 text-sm">Xây dựng sản phẩm dựa trên yêu cầu từ BA và thiết kế từ Designer.</p>
+                            <p class="font-bold mt-2 text-sm">Output: Chức năng phần mềm.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="text-center mt-8 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-800 rounded">
+                    <p><span class="font-bold">Điểm phối hợp quan trọng:</span> Designer phải liên tục tham vấn (Consult) BA để đảm bảo thiết kế không vi phạm các quy tắc nghiệp vụ đã được định nghĩa.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="brd-structure" class="mb-12">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-3xl font-bold text-center text-[#003F5C] mb-4">Cấu trúc Tài liệu Yêu cầu Nghiệp vụ (BRD)</h2>
+                <p class="text-center text-lg max-w-3xl mx-auto mb-10">Tài liệu Yêu cầu Nghiệp vụ (BRD) là sản phẩm cốt lõi của BA, làm nền tảng cho cả đội ngũ thiết kế và phát triển. Dưới đây là các thành phần chính của một tài liệu BRD tiêu chuẩn.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#7A5195]">
+                        <h3 class="font-bold text-lg mb-2">1. Tổng quan & Mục tiêu Kinh doanh</h3>
+                        <p class="text-sm">Mô tả bối cảnh, vấn đề cần giải quyết và các mục tiêu kinh doanh mà dự án hướng tới.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#7A5195]">
+                        <h3 class="font-bold text-lg mb-2">2. Phạm vi (Scope)</h3>
+                        <p class="text-sm">Xác định rõ những gì sẽ được thực hiện (in-scope) và những gì sẽ không được thực hiện (out-of-scope).</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#7A5195]">
+                        <h3 class="font-bold text-lg mb-2">3. Tác nhân, User Stories & Phân quyền</h3>
+                        <p class="text-sm">Liệt kê các đối tượng người dùng, kịch bản sử dụng của họ và các cấp độ truy cập tương ứng.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#EF5675]">
+                        <h3 class="font-bold text-lg mb-2">4. Yêu cầu Chức năng</h3>
+                        <p class="text-sm">Mô tả chi tiết các tính năng, hành vi của hệ thống, quy trình nghiệp vụ và luồng dữ liệu.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#EF5675]">
+                        <h3 class="font-bold text-lg mb-2">5. Yêu cầu Phi chức năng</h3>
+                        <p class="text-sm">Định nghĩa các tiêu chí về hiệu năng, bảo mật, khả năng mở rộng và tính dễ sử dụng của hệ thống.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#EF5675]">
+                        <h3 class="font-bold text-lg mb-2">6. Sơ đồ Kiến trúc Tổng quan</h3>
+                        <p class="text-sm">Cung cấp cái nhìn ở mức cao về các thành phần chính của hệ thống và sự tương tác giữa chúng.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="functional-req-details" class="mb-12">
+            <div class="bg-white rounded-lg shadow-md p-8">
+                <h2 class="text-3xl font-bold text-center text-[#003F5C] mb-4">Làm rõ Yêu cầu Chức năng</h2>
+                <p class="text-center text-lg max-w-3xl mx-auto mb-10">Để đội ngũ phát triển và kiểm thử hiểu đúng và đủ, mỗi yêu cầu chức năng cần được mô tả chi tiết qua 3 lăng kính: Đặc tả, Luồng nghiệp vụ và Yêu cầu chi tiết.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#FFA600]">
+                        <h3 class="font-bold text-xl mb-3">1. Đặc tả nghiệp vụ (Use Case)</h3>
+                        <p class="text-sm mb-4">Mô tả chi tiết sự tương tác giữa người dùng và hệ thống để đạt được một mục tiêu cụ thể. (<a href="https://thinhnotes.com/chuyen-nghe-ba/viet-dac-ta-use-case-sao-don-gian-nhung-hieu-qua/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Tham khảo</a>)</p>
+                        <ul class="text-sm space-y-2 list-disc list-inside">
+                            <li><strong>Mô tả:</strong> Tóm tắt mục đích của chức năng.</li>
+                            <li><strong>Tác nhân:</strong> Ai là người thực hiện.</li>
+                            <li><strong>Điều kiện tiên quyết:</strong> Điều kiện cần có trước khi bắt đầu.</li>
+                            <li><strong>Trigger:</strong> Sự kiện khởi động luồng.</li>
+                            <li><strong>Luồng chính:</strong> Các bước thành công.</li>
+                            <li><strong>Luồng thay thế:</strong> Các kịch bản phụ nhưng vẫn thành công.</li>
+                            <li><strong>Luồng xử lý lỗi:</strong> Các bước xử lý khi có lỗi xảy ra.</li>
+                        </ul>
+                    </div>
+        
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#FFA600]">
+                        <h3 class="font-bold text-xl mb-3">2. Luồng nghiệp vụ (BPMN)</h3>
+                        <p class="text-sm mb-4">Trực quan hóa quy trình bằng sơ đồ theo chuẩn BPMN để mọi người dễ dàng nắm bắt. (<a href="https://thinhnotes.com/chuyen-nghe-ba/giai-ngo-cac-ky-hieu-bpmn/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Tham khảo</a>)</p>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-center"><span class="w-8 h-8 flex items-center justify-center border-2 border-green-500 rounded-full mr-3 text-green-500 font-bold">●</span> Sự kiện Bắt đầu / Kết thúc</div>
+                            <div class="flex items-center"><span class="w-8 h-8 flex items-center justify-center border-2 border-blue-500 rounded-md mr-3 text-blue-500"></span> Hoạt động / Nhiệm vụ</div>
+                            <div class="flex items-center"><span class="w-8 h-8 flex items-center justify-center border-2 border-yellow-500 transform rotate-45 mr-3 text-yellow-500 font-bold">+</span> Điểm quyết định (Gateway)</div>
+                            <div class="flex items-center"><span class="w-8 h-8 flex items-center justify-center mr-3 text-gray-600 text-2xl">→</span> Luồng trình tự (Sequence Flow)</div>
+                        </div>
+                    </div>
+        
+                    <div class="bg-gray-50 p-6 rounded-lg border-l-4 border-[#FFA600]">
+                        <h3 class="font-bold text-xl mb-3">3. Yêu cầu chi tiết (Data Fields)</h3>
+                        <p class="text-sm mb-4">Định nghĩa cụ thể từng trường dữ liệu trên giao diện để đảm bảo tính nhất quán và chính xác.</p>
+                        <div class="text-sm space-y-3">
+                            <p><strong>Tên trường:</strong> Tên định danh (VD: `user_email`).</p>
+                            <p><strong>Control Type:</strong> Kiểu hiển thị (VD: Textbox, Radio, Checkbox, Pulldown).</p>
+                            <p><strong>Mô tả quy tắc:</strong> Các ràng buộc nghiệp vụ (VD: Bắt buộc nhập, định dạng email, tối đa 50 ký tự).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="task-load" class="mb-12">
+            <h2 class="text-3xl font-bold text-center text-[#003F5C] mb-8">So sánh Khối lượng Công việc Thực thi (Responsible)</h2>
+            <p class="text-center text-lg max-w-3xl mx-auto mb-10">Biểu đồ cột so sánh số lượng nhiệm vụ mà mỗi vai trò chịu trách nhiệm thực hiện trực tiếp (Responsible - R). Điều này cho thấy sự phân bổ khối lượng công việc chính trong các giai đoạn của dự án.</p>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="relative h-96 w-full max-w-4xl mx-auto">
+                    <canvas id="responsibleChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-[#003F5C] text-white text-center p-6 mt-8">
+        <p>&copy; 2025 Project Management Office. Tối ưu hóa quy trình vì thành công của dự án.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const raciPalette = {
+                R: '#EF5675', 
+                A: '#FFA600', 
+                C: '#7A5195', 
+                I: '#374C80', 
+                BG: '#003F5C'
+            };
+
+            const defaultChartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#333'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                const item = tooltipItems[0];
+                                let label = item.chart.data.labels[item.dataIndex];
+                                if (Array.isArray(label)) {
+                                    return label.join(' ');
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            };
+
+            const responsibleCtx = document.getElementById('responsibleChart').getContext('2d');
+            const responsibleData = {
+                labels: ['PM', 'BA', 'Design', 'FE Dev', 'BE Dev', 'Tester'],
+                datasets: [{
+                    label: 'Số lượng nhiệm vụ thực thi (R)',
+                    data: [4, 6, 2, 6, 6, 5],
+                    backgroundColor: ['#003F5C', '#7A5195', '#BC5090', '#EF5675', '#FF764A', '#FFA600'],
+                    borderColor: '#fff',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            };
+            new Chart(responsibleCtx, {
+                type: 'bar',
+                data: responsibleData,
+                options: {
+                    ...defaultChartOptions,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                             grid: {
+                                color: '#e0e0e0'
+                            },
+                            ticks: {
+                                color: '#333'
+                            }
+                        },
+                        y: {
+                             grid: {
+                                display: false
+                            },
+                             ticks: {
+                                color: '#333'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
