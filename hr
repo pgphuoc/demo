@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Quản lý Bảo hiểm & Nhân sự</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 
+    Chosen Palette: Calm Harmony
+    Application Structure Plan: Tôi đã thiết kế ứng dụng theo cấu trúc 4 phần chính, điều hướng bằng thanh bên: 1. Bảng điều khiển: Cung cấp cái nhìn tổng quan nhanh chóng. 2. Quản lý Nhân viên: Thực thi UC-01, cho phép xem và chỉnh sửa hồ sơ chi tiết. 3. Xử lý Biến động: Thực thi UC-02, tự động hóa quy trình báo cáo hàng tháng. 4. Báo cáo: Thực thi UC-03, cung cấp công cụ phân tích và đối soát. Cấu trúc này ánh xạ trực tiếp các quy trình nghiệp vụ trong BRD, giúp người dùng dễ dàng thực hiện các tác vụ cốt lõi của họ một cách hiệu quả và trực quan.
+    Visualization & Content Choices: 1. Bảng điều khiển (Mục tiêu: Inform): Sử dụng các thẻ chỉ số (stat cards) để hiển thị dữ liệu quan trọng và một danh sách đơn giản cho các cảnh báo. 2. Quản lý Nhân viên (Mục tiêu: Organize): Bảng dữ liệu tương tác với chức năng tìm kiếm và một modal để chỉnh sửa chi tiết, giúp giữ giao diện chính gọn gàng. 3. Xử lý Biến động (Mục tiêu: Organize/Compare): Ba bảng riêng biệt cho các loại biến động, cho phép người dùng rà soát dễ dàng trước khi xuất file. 4. Báo cáo (Mục tiêu: Compare/Change): Bảng dữ liệu động kết hợp với biểu đồ cột (Chart.js) để trực quan hóa chi phí bảo hiểm qua các tháng, hỗ trợ việc ra quyết định của quản lý.
+    CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .sidebar-icon {
+            width: 24px;
+            height: 24px;
+        }
+        .active-nav {
+            background-color: #e0f2f1;
+            color: #00796b;
+            font-weight: 600;
+        }
+        .modal {
+            display: none;
+        }
+        .modal-content {
+            max-height: 90vh;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+        .comparison-up {
+            color: #16a34a; /* green-600 */
+        }
+        .comparison-down {
+            color: #dc2626; /* red-600 */
+        }
+        .comparison-neutral {
+            color: #64748b; /* slate-500 */
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-md flex-shrink-0">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold text-teal-700">HR Analytics</h1>
+                <p class="text-sm text-slate-500">Bảo hiểm & Nhân sự</p>
+            </div>
+            <nav class="mt-6">
+                <a href="#" data-section="dashboard" class="nav-link flex items-center px-6 py-3 text-slate-600 hover:bg-teal-50 active-nav">
+                    <span class="mr-3">📊</span> Bảng điều khiển
+                </a>
+                <a href="#" data-section="employees" class="nav-link flex items-center px-6 py-3 text-slate-600 hover:bg-teal-50">
+                    <span class="mr-3">👥</span> Quản lý Nhân viên
+                </a>
+                <a href="#" data-section="changes" class="nav-link flex items-center px-6 py-3 text-slate-600 hover:bg-teal-50">
+                    <span class="mr-3">🔄</span> Xử lý Biến động BH
+                </a>
+                <a href="#" data-section="reports" class="nav-link flex items-center px-6 py-3 text-slate-600 hover:bg-teal-50">
+                    <span class="mr-3">📄</span> Báo cáo BH
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-8 lg:p-10">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section">
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <h2 class="text-3xl font-bold">Bảng điều khiển Nhân sự</h2>
+                    <div class="flex flex-wrap items-center gap-3 bg-white p-2 rounded-lg shadow-sm">
+                        <label class="font-medium text-sm text-slate-600">Xem theo:</label>
+                        <select id="filter-type" class="border-gray-300 rounded-md shadow-sm w-28">
+                            <option value="month">Tháng</option>
+                            <option value="quarter">Quý</option>
+                            <option value="year">Năm</option>
+                        </select>
+                        <input type="month" id="month-filter" class="border-gray-300 rounded-md shadow-sm w-40">
+                        <select id="quarter-filter" class="border-gray-300 rounded-md shadow-sm hidden w-24">
+                            <option value="1">Quý 1</option>
+                            <option value="2">Quý 2</option>
+                            <option value="3">Quý 3</option>
+                            <option value="4">Quý 4</option>
+                        </select>
+                        <input type="number" id="year-filter" class="border-gray-300 rounded-md shadow-sm hidden w-24">
+                        <button id="apply-filter-btn" class="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Lọc</button>
+                    </div>
+                </div>
+
+                <!-- Row 1: Employee Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white p-4 rounded-lg shadow"><h3 class="text-slate-500 font-medium">Tổng nhân viên</h3><p class="text-3xl font-bold mt-1" id="stat-total-emp">0</p><span id="stat-total-emp-comp" class="text-sm"></span></div>
+                    <div class="bg-white p-4 rounded-lg shadow"><h3 class="text-slate-500 font-medium">Nhân viên chính thức</h3><p class="text-3xl font-bold mt-1" id="stat-official-emp">0</p><span id="stat-official-emp-comp" class="text-sm"></span></div>
+                    <div class="bg-white p-4 rounded-lg shadow"><h3 class="text-slate-500 font-medium">Nhân viên thử việc</h3><p class="text-3xl font-bold mt-1" id="stat-probation-emp">0</p><span id="stat-probation-emp-comp" class="text-sm"></span></div>
+                    <div class="bg-white p-4 rounded-lg shadow"><h3 class="text-slate-500 font-medium">Nhân viên đã nghỉ</h3><p class="text-3xl font-bold mt-1" id="stat-resigned-emp">0</p><span id="stat-resigned-emp-comp" class="text-sm"></span></div>
+                </div>
+
+                <!-- Row 2: Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-4">Nhân viên theo độ tuổi</h3>
+                        <div class="chart-container"><canvas id="age-chart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-4">Nhân viên theo loại hợp đồng</h3>
+                        <div class="chart-container"><canvas id="contract-chart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-4">Nhân viên theo năm kinh nghiệm</h3>
+                        <div class="chart-container"><canvas id="experience-chart"></canvas></div>
+                    </div>
+                </div>
+                 <!-- Row 3: Department Charts -->
+                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-4">Cơ cấu nhân sự theo phòng ban (Nam/Nữ)</h3>
+                        <div class="chart-container"><canvas id="department-gender-chart"></canvas></div>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-4">Biến động nhân sự theo phòng ban</h3>
+                        <div class="chart-container"><canvas id="fluctuation-chart"></canvas></div>
+                    </div>
+                </div>
+                 <!-- Row 4: Discipline & Insurance -->
+                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-4">Nhân sự vi phạm kỷ luật theo phòng ban</h3>
+                        <div class="chart-container"><canvas id="discipline-chart"></canvas></div>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="font-bold text-lg mb-4">Tham gia BHXH theo phòng ban</h3>
+                        <div class="chart-container"><canvas id="insurance-chart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Row 5: Expiring Cards -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="font-bold text-lg mb-4">Danh sách thẻ BHYT sắp hết hạn (trong 90 ngày tới)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="p-3">Họ và tên</th><th class="p-3">Mã NV</th><th class="p-3">Số thẻ BHYT</th><th class="p-3">Ngày hết hạn</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expiring-cards-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Employees Section -->
+            <section id="employees" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6">Quản lý Hồ sơ Bảo hiểm Nhân viên</h2>
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <input type="text" id="employee-search" placeholder="Tìm kiếm nhân viên..." class="w-full md:w-1/3 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="p-3">Họ và tên</th>
+                                    <th class="p-3">Mã NV</th>
+                                    <th class="p-3">Mã số BHXH</th>
+                                    <th class="p-3">Trạng thái</th>
+                                    <th class="p-3">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employee-table">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Changes Section -->
+            <section id="changes" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6">Xử lý Biến động Bảo hiểm</h2>
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <label for="report-period" class="font-medium">Chọn kỳ báo cáo:</label>
+                        <input type="month" id="report-period" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        <button id="generate-changes-btn" class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Tổng hợp dữ liệu</button>
+                    </div>
+
+                    <div id="changes-results" class="hidden">
+                        <div class="mb-6">
+                            <h3 class="font-bold text-lg mb-2 text-green-600">Danh sách Báo tăng</h3>
+                            <div class="overflow-x-auto border rounded-lg">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-green-50">
+                                        <tr>
+                                            <th class="p-3"><input type="checkbox" checked></th>
+                                            <th class="p-3">Họ và tên</th>
+                                            <th class="p-3">Mã số BHXH</th>
+                                            <th class="p-3">Mức lương mới</th>
+                                            <th class="p-3">Lý do</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="increase-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="mb-6">
+                            <h3 class="font-bold text-lg mb-2 text-red-600">Danh sách Báo giảm</h3>
+                            <div class="overflow-x-auto border rounded-lg">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-red-50">
+                                        <tr>
+                                            <th class="p-3"><input type="checkbox" checked></th>
+                                            <th class="p-3">Họ và tên</th>
+                                            <th class="p-3">Mã số BHXH</th>
+                                            <th class="p-3">Lý do</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="decrease-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg mb-2 text-blue-600">Danh sách Điều chỉnh</h3>
+                             <div class="overflow-x-auto border rounded-lg">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-blue-50">
+                                        <tr>
+                                            <th class="p-3"><input type="checkbox" checked></th>
+                                            <th class="p-3">Họ và tên</th>
+                                            <th class="p-3">Mã số BHXH</th>
+                                            <th class="p-3">Lương cũ</th>
+                                            <th class="p-3">Lương mới</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adjustment-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                         <div class="mt-6 text-right">
+                             <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Xuất báo cáo D02-LT</button>
+                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="content-section hidden">
+                 <h2 class="text-3xl font-bold mb-6">Báo cáo & Phân tích Bảo hiểm</h2>
+                 <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex flex-wrap gap-4 items-center mb-6">
+                        <div>
+                            <label for="report-type" class="font-medium text-sm">Loại báo cáo:</label>
+                            <select id="report-type" class="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                <option value="c12">Báo cáo đối chiếu C12</option>
+                                <option value="cost">Phân tích chi phí BH</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label for="report-from-period" class="font-medium text-sm">Từ kỳ:</label>
+                            <input type="month" id="report-from-period" class="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <div>
+                            <label for="report-to-period" class="font-medium text-sm">Đến kỳ:</label>
+                            <input type="month" id="report-to-period" class="w-full mt-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <button id="generate-report-btn" class="self-end px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Xem báo cáo</button>
+                    </div>
+                    
+                    <div id="report-c12-content">
+                        <h3 class="font-bold text-lg mb-4">Báo cáo đối chiếu đóng BHXH (C12)</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="p-3">Họ tên</th><th class="p-3">Mã số BHXH</th><th class="p-3">Quỹ lương</th><th class="p-3">Công ty đóng</th><th class="p-3">NLĐ đóng</th><th class="p-3">Tổng cộng</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="c12-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="report-cost-content" class="hidden">
+                         <h3 class="font-bold text-lg mb-4">Phân tích chi phí bảo hiểm hàng tháng</h3>
+                         <div class="chart-container" style="height:400px"><canvas id="cost-chart"></canvas></div>
+                    </div>
+                 </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Employee Edit Modal -->
+    <div id="employee-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="modal-content bg-white w-11/12 md:w-3/4 lg:w-2/3 rounded-lg shadow-xl overflow-y-auto p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">Thông tin Bảo hiểm Nhân viên</h3>
+                <button id="close-modal-btn" class="text-2xl font-bold text-slate-500 hover:text-slate-800">&times;</button>
+            </div>
+            <form id="employee-form">
+                <input type="hidden" id="modal-employee-id">
+                <fieldset class="border rounded-lg p-4 mb-6">
+                    <legend class="px-2 font-bold text-teal-700">Thông tin cơ bản</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label class="block text-sm font-medium">Họ và tên</label><input type="text" id="modal-employee-name" class="mt-1 w-full px-3 py-2 bg-slate-100 border rounded-lg" readonly></div>
+                        <div><label class="block text-sm font-medium">Mã nhân viên</label><input type="text" id="modal-employee-code" class="mt-1 w-full px-3 py-2 bg-slate-100 border rounded-lg" readonly></div>
+                    </div>
+                </fieldset>
+                <fieldset class="border rounded-lg p-4 mb-6">
+                    <legend class="px-2 font-bold text-teal-700">Thông tin Bảo hiểm</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div><label for="modal-bhxh-code" class="block text-sm font-medium">Số BHXH</label><input type="text" id="modal-bhxh-code" class="mt-1 w-full px-3 py-2 border rounded-lg" required></div>
+                        <div><label for="modal-start-date" class="block text-sm font-medium">Ngày bắt đầu tham gia</label><input type="date" id="modal-start-date" class="mt-1 w-full px-3 py-2 border rounded-lg" required></div>
+                        <div><label for="modal-current-salary" class="block text-sm font-medium">Mức đóng BHXH hiện tại</label><input type="text" id="modal-current-salary" class="mt-1 w-full px-3 py-2 bg-slate-100 border rounded-lg" readonly></div>
+                        <div><label for="modal-status" class="block text-sm font-medium">Trạng thái tham gia</label><select id="modal-status" class="mt-1 w-full px-3 py-2 border rounded-lg" required><option value="Đang tham gia">Đang tham gia</option><option value="Tạm dừng">Tạm dừng</option><option value="Đã nghỉ">Đã nghỉ</option></select></div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium mb-2">Các loại bảo hiểm tham gia:</label>
+                        <div class="grid grid-cols-3 gap-4">
+                            <label class="flex items-center"><input type="checkbox" id="bhxh-check" class="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500" checked> <span class="ml-2">BHXH</span></label>
+                            <label class="flex items-center"><input type="checkbox" id="bhtn-check" class="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500" checked> <span class="ml-2">BHTN</span></label>
+                            <label class="flex items-center"><input type="checkbox" id="bhyt-check" class="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500" checked> <span class="ml-2">BHYT</span></label>
+                        </div>
+                    </div>
+                    <div id="bhyt-details" class="mt-4 border-t pt-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label for="modal-bhyt-card-no" class="block text-sm font-medium">Số thẻ BHYT</label><input type="text" id="modal-bhyt-card-no" class="mt-1 w-full px-3 py-2 border rounded-lg"></div>
+                            <div><label for="modal-bhyt-expiry-date" class="block text-sm font-medium">Ngày hết hạn</label><input type="date" id="modal-bhyt-expiry-date" class="mt-1 w-full px-3 py-2 border rounded-lg"></div>
+                            <div class="md:col-span-2"><label for="modal-bhyt-hospital" class="block text-sm font-medium">Nơi đăng ký KCB</label><input type="text" id="modal-bhyt-hospital" class="mt-1 w-full px-3 py-2 border rounded-lg"></div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="border rounded-lg p-4">
+                    <legend class="px-2 font-bold text-teal-700">Lịch sử đóng BHXH</legend>
+                    <div class="flex justify-end mb-4"><button type="button" id="change-salary-btn" class="px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-lg hover:bg-blue-200">Thay đổi mức lương đóng BHXH</button></div>
+                    <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-slate-50"><tr><th class="p-2">Từ ngày</th><th class="p-2">Đến ngày</th><th class="p-2">Mức lương đóng BHXH</th></tr></thead><tbody id="salary-history-table"></tbody></table></div>
+                </fieldset>
+                <div class="mt-8 text-right space-x-4">
+                    <button type="button" id="cancel-modal-btn" class="px-6 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300">Hủy</button>
+                    <button type="submit" class="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- MOCK DATA ---
+    const mockHospitals = ["Bệnh viện Thống Nhất", "Bệnh viện Chợ Rẫy", "Bệnh viện 115", "Bệnh viện Đại học Y Dược", "Bệnh viện Gia Định", "Bệnh viện Từ Dũ"];
+    const departments = ['Kinh doanh', 'Kỹ thuật', 'Nhân sự', 'Marketing', 'Kế toán', 'Sản xuất', 'R&D', 'Hành chính'];
+    const contractTypes = ['Chính thức', 'Thử việc', 'Không xác định'];
+    
+    const firstNamesMale = ["An", "Bình", "Cường", "Dũng", "Hải", "Hùng", "Khánh", "Long", "Minh", "Nam", "Phúc", "Quân", "Sơn", "Thắng", "Thành", "Toàn", "Trung", "Tuấn", "Việt"];
+    const firstNamesFemale = ["Anh", "Chi", "Dung", "Hà", "Hạnh", "Hoa", "Hương", "Lan", "Linh", "Mai", "Nga", "Ngọc", "Oanh", "Phương", "Quỳnh", "Thảo", "Trang", "Tú", "Yến"];
+    const lastNames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương"];
+
+    let employees = Array.from({ length: 80 }, (_, i) => {
+        const isMale = Math.random() > 0.5;
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const firstName = isMale 
+            ? firstNamesMale[Math.floor(Math.random() * firstNamesMale.length)] 
+            : firstNamesFemale[Math.floor(Math.random() * firstNamesFemale.length)];
+        const middleName = isMale ? "Văn" : "Thị";
+
+        const joinDate = new Date(2020 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+        const hasLeft = Math.random() > 0.8;
+        const leaveDate = hasLeft ? new Date(joinDate.getFullYear() + Math.floor(Math.random() * 2), joinDate.getMonth(), joinDate.getDate()) : null;
+        const dob = new Date(1975 + Math.floor(Math.random() * 25), Math.floor(Math.random() * 12), 1);
+        const salary1 = (Math.floor(Math.random() * 20) + 10) * 1000000;
+        const salary2 = salary1 * (1.1 + Math.random() * 0.3);
+        
+        return {
+            id: i + 1,
+            code: `NV${(i + 1).toString().padStart(3, '0')}`,
+            name: `${lastName} ${middleName} ${firstName}`,
+            gender: isMale ? 'Nam' : 'Nữ',
+            dob: dob.toISOString().split('T')[0],
+            department: departments[i % departments.length],
+            contractType: leaveDate ? 'Đã nghỉ' : contractTypes[Math.floor(Math.random() * contractTypes.length)],
+            joinDate: joinDate.toISOString().split('T')[0],
+            leaveDate: leaveDate ? leaveDate.toISOString().split('T')[0] : null,
+            bhxh: `012345${(6789 + i).toString()}`,
+            bhyt: `DN4797912345${(678 + i).toString()}`,
+            bhytExpiry: `${new Date().getFullYear() + Math.floor(Math.random() * 2)}-${(Math.floor(Math.random() * 12) + 1).toString().padStart(2, '0')}-28`,
+            hospital: mockHospitals[i % mockHospitals.length],
+            status: leaveDate ? 'Đã nghỉ' : (Math.random() > 0.1 ? 'Đang tham gia' : 'Tạm dừng'),
+            salaryHistory: [{ from: joinDate.toISOString().split('T')[0], to: '2024-12-31', salary: salary1 }, { from: '2025-01-01', to: '', salary: salary2 }],
+            disciplinaryActions: Math.random() > 0.9 ? [{ date: `2024-0${Math.floor(Math.random()*9)+1}-15`, reason: 'Vi phạm nội quy' }] : []
+        };
+    });
+
+    // --- UTILS ---
+    const formatCurrency = (num) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+    
+    // --- CHART INSTANCES ---
+    let chartInstances = {};
+
+    function createOrUpdateChart(ctx, type, data, options) {
+        const id = ctx.canvas.id;
+        if (chartInstances[id]) {
+            chartInstances[id].data = data;
+            chartInstances[id].options = options;
+            chartInstances[id].update();
+        } else {
+            chartInstances[id] = new Chart(ctx, { type, data, options });
+        }
+    }
+
+    // --- UI ELEMENTS ---
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('.content-section');
+    const employeeModal = document.getElementById('employee-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const cancelModalBtn = document.getElementById('cancel-modal-btn');
+    const bhytCheckbox = document.getElementById('bhyt-check');
+    const bhytDetails = document.getElementById('bhyt-details');
+
+    // --- NAVIGATION LOGIC ---
+    navLinks.forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const targetSection = link.dataset.section;
+            navLinks.forEach(l => l.classList.remove('active-nav'));
+            link.classList.add('active-nav');
+            sections.forEach(sec => sec.classList.toggle('hidden', sec.id !== targetSection));
+        });
+    });
+
+    // --- MODAL LOGIC ---
+    function openModal() { employeeModal.style.display = 'flex'; }
+    function closeModal() { employeeModal.style.display = 'none'; }
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelModalBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (e) => { if (e.target === employeeModal) closeModal(); });
+    bhytCheckbox.addEventListener('change', () => bhytDetails.classList.toggle('hidden', !bhytCheckbox.checked));
+
+    // --- DASHBOARD FILTER LOGIC ---
+    const filterType = document.getElementById('filter-type');
+    const monthFilter = document.getElementById('month-filter');
+    const quarterFilter = document.getElementById('quarter-filter');
+    const yearFilter = document.getElementById('year-filter');
+    const applyFilterBtn = document.getElementById('apply-filter-btn');
+
+    filterType.addEventListener('change', () => {
+        const type = filterType.value;
+        monthFilter.classList.toggle('hidden', type !== 'month');
+        quarterFilter.classList.toggle('hidden', type !== 'quarter');
+        yearFilter.classList.toggle('hidden', type !== 'year');
+        
+        if (type === 'quarter') {
+            yearFilter.classList.remove('hidden');
+        }
+    });
+    
+    applyFilterBtn.addEventListener('click', updateDashboard);
+
+    function getPeriod(type, monthVal, quarterVal, yearVal) {
+        const now = new Date();
+        const year = parseInt(yearVal, 10) || now.getFullYear();
+        let start, end;
+
+        if (type === 'month') {
+            const [mYear, mMonth] = monthVal.split('-').map(Number);
+            start = new Date(mYear, mMonth - 1, 1);
+            end = new Date(mYear, mMonth, 0);
+        } else if (type === 'quarter') {
+            const q = parseInt(quarterVal, 10);
+            start = new Date(year, (q - 1) * 3, 1);
+            end = new Date(year, q * 3, 0);
+        } else { // year
+            start = new Date(year, 0, 1);
+            end = new Date(year, 11, 31);
+        }
+        return { start, end };
+    }
+
+    function updateDashboard() {
+        const type = filterType.value;
+        const period = getPeriod(type, monthFilter.value, quarterFilter.value, yearFilter.value);
+        
+        let prevPeriod;
+        const prevStart = new Date(period.start);
+
+        if(type === 'month') {
+            prevStart.setMonth(prevStart.getMonth() - 1);
+            const prevMonthVal = prevStart.toISOString().slice(0, 7);
+            prevPeriod = getPeriod('month', prevMonthVal, '1', '2024');
+        } else if (type === 'quarter') {
+            prevStart.setMonth(prevStart.getMonth() - 3);
+            const prevQ = Math.floor(prevStart.getMonth() / 3) + 1;
+            const prevY = prevStart.getFullYear();
+            prevPeriod = getPeriod('quarter', '', prevQ.toString(), prevY.toString());
+        } else { // year
+            prevStart.setFullYear(prevStart.getFullYear() - 1);
+            prevPeriod = getPeriod('year', '', '1', prevStart.getFullYear().toString());
+        }
+        
+        const activeNow = employees.filter(e => new Date(e.joinDate) <= period.end && (!e.leaveDate || new Date(e.leaveDate) > period.start));
+        const activePrev = employees.filter(e => new Date(e.joinDate) <= prevPeriod.end && (!e.leaveDate || new Date(e.leaveDate) > prevPeriod.start));
+
+        // 1. Employee Count Stats
+        updateStatCard('stat-total-emp', activeNow.length, activePrev.length);
+        updateStatCard('stat-official-emp', activeNow.filter(e=>e.contractType === 'Chính thức').length, activePrev.filter(e=>e.contractType === 'Chính thức').length);
+        updateStatCard('stat-probation-emp', activeNow.filter(e=>e.contractType === 'Thử việc').length, activePrev.filter(e=>e.contractType === 'Thử việc').length);
+        updateStatCard('stat-resigned-emp', 
+            employees.filter(e => e.leaveDate && new Date(e.leaveDate) >= period.start && new Date(e.leaveDate) <= period.end).length,
+            employees.filter(e => e.leaveDate && new Date(e.leaveDate) >= prevPeriod.start && new Date(e.leaveDate) <= prevPeriod.end).length
+        );
+
+        // 2. Years of Experience Chart
+        const expData = activeNow.reduce((acc, e) => {
+            const exp = new Date(period.end).getFullYear() - new Date(e.joinDate).getFullYear();
+            let group = 'Trên 5 năm';
+            if (exp < 1) group = 'Dưới 1 năm';
+            else if (exp <= 3) group = '1-3 năm';
+            else if (exp <= 5) group = '3-5 năm';
+            acc[group] = (acc[group] || 0) + 1;
+            return acc;
+        }, {});
+        createOrUpdateChart(document.getElementById('experience-chart').getContext('2d'), 'bar', {
+            labels: Object.keys(expData),
+            datasets: [{ label: 'Số lượng', data: Object.values(expData), backgroundColor: '#7dd3fc' }]
+        }, { responsive: true, maintainAspectRatio: false });
+
+        // 3. Contract Type Chart
+        const contractData = activeNow.reduce((acc, e) => {
+            if (e.contractType !== 'Đã nghỉ') {
+                acc[e.contractType] = (acc[e.contractType] || 0) + 1;
+            }
+            return acc;
+        }, {});
+        createOrUpdateChart(document.getElementById('contract-chart').getContext('2d'), 'doughnut', {
+            labels: Object.keys(contractData),
+            datasets: [{ data: Object.values(contractData), backgroundColor: ['#34d399', '#fbbf24', '#60a5fa'] }]
+        }, { responsive: true, maintainAspectRatio: false });
+        
+        // 4. Department & Gender Chart
+        const deptGenderData = activeNow.reduce((acc, e) => {
+            if (!acc[e.department]) acc[e.department] = { 'Nam': 0, 'Nữ': 0 };
+            acc[e.department][e.gender]++;
+            return acc;
+        }, {});
+        createOrUpdateChart(document.getElementById('department-gender-chart').getContext('2d'), 'bar', {
+            labels: Object.keys(deptGenderData),
+            datasets: [
+                { label: 'Nam', data: Object.values(deptGenderData).map(d => d.Nam), backgroundColor: '#60a5fa' },
+                { label: 'Nữ', data: Object.values(deptGenderData).map(d => d.Nữ), backgroundColor: '#f472b6' }
+            ]
+        }, { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } });
+
+        // 5. Fluctuation Chart
+        const newHires = employees.filter(e => new Date(e.joinDate) >= period.start && new Date(e.joinDate) <= period.end);
+        const resignations = employees.filter(e => e.leaveDate && new Date(e.leaveDate) >= period.start && new Date(e.leaveDate) <= period.end);
+        const fluctuationData = departments.reduce((acc, dept) => {
+            acc[dept] = { new: 0, left: 0 };
+            return acc;
+        }, {});
+        newHires.forEach(e => { if(fluctuationData[e.department]) fluctuationData[e.department].new++; });
+        resignations.forEach(e => { if(fluctuationData[e.department]) fluctuationData[e.department].left++; });
+        createOrUpdateChart(document.getElementById('fluctuation-chart').getContext('2d'), 'bar', {
+            labels: departments,
+            datasets: [
+                { label: 'Tuyển mới', data: departments.map(d => fluctuationData[d].new), backgroundColor: '#34d399' },
+                { label: 'Đã nghỉ', data: departments.map(d => fluctuationData[d].left), backgroundColor: '#f87171' }
+            ]
+        }, { responsive: true, maintainAspectRatio: false });
+        
+        // 6. Age Group Chart
+        const ageData = activeNow.reduce((acc, e) => {
+            const age = new Date().getFullYear() - new Date(e.dob).getFullYear();
+            let group = 'Trên 55';
+            if (age < 25) group = '18-24';
+            else if (age < 30) group = '25-29';
+            else if (age < 35) group = '30-34';
+            else if (age < 45) group = '35-44';
+            else if (age <= 55) group = '45-55';
+            acc[group] = (acc[group] || 0) + 1;
+            return acc;
+        }, {});
+        createOrUpdateChart(document.getElementById('age-chart').getContext('2d'), 'bar', {
+            labels: Object.keys(ageData).sort(),
+            datasets: [{ label: 'Số lượng', data: Object.values(ageData), backgroundColor: '#a3e635' }]
+        }, { responsive: true, maintainAspectRatio: false });
+
+        // 7. Discipline Chart
+        const disciplineData = employees.filter(e => e.disciplinaryActions.length > 0 && new Date(e.disciplinaryActions[0].date) >= period.start && new Date(e.disciplinaryActions[0].date) <= period.end).reduce((acc, e) => {
+            acc[e.department] = (acc[e.department] || 0) + 1;
+            return acc;
+        }, {});
+        createOrUpdateChart(document.getElementById('discipline-chart').getContext('2d'), 'bar', {
+            labels: departments,
+            datasets: [{ label: 'Số vụ việc', data: departments.map(d => disciplineData[d] || 0), backgroundColor: '#facc15' }]
+        }, { responsive: true, maintainAspectRatio: false });
+        
+        // 8. Insurance Participation Chart
+        const insuranceData = activeNow.filter(e=>e.status === 'Đang tham gia').reduce((acc, e) => {
+             acc[e.department] = (acc[e.department] || 0) + 1;
+            return acc;
+        }, {});
+        createOrUpdateChart(document.getElementById('insurance-chart').getContext('2d'), 'bar', {
+            labels: departments,
+            datasets: [{ label: 'Số lượng tham gia BHXH', data: departments.map(d => insuranceData[d] || 0), backgroundColor: '#2dd4bf' }]
+        }, { responsive: true, maintainAspectRatio: false });
+        
+        // 9. Expiring BHYT Table
+        const expiringTable = document.getElementById('expiring-cards-table');
+        expiringTable.innerHTML = '';
+        const ninetyDaysFromNow = new Date();
+        ninetyDaysFromNow.setDate(new Date().getDate() + 90);
+        employees.filter(e => e.bhytExpiry && new Date(e.bhytExpiry) <= ninetyDaysFromNow && new Date(e.bhytExpiry) >= new Date())
+                 .forEach(emp => {
+                    expiringTable.innerHTML += `<tr class="border-b"><td class="p-3">${emp.name}</td><td class="p-3">${emp.code}</td><td class="p-3">${emp.bhyt}</td><td class="p-3 text-red-600 font-medium">${emp.bhytExpiry}</td></tr>`;
+                 });
+    }
+
+    function updateStatCard(elementId, current, previous) {
+        document.getElementById(elementId).textContent = current;
+        const diff = current - previous;
+        const compEl = document.getElementById(`${elementId}-comp`);
+        if (diff > 0) {
+            compEl.className = 'text-sm comparison-up';
+            compEl.textContent = `▲ ${diff} so với kỳ trước`;
+        } else if (diff < 0) {
+            compEl.className = 'text-sm comparison-down';
+            compEl.textContent = `▼ ${Math.abs(diff)} so với kỳ trước`;
+        } else {
+            compEl.className = 'text-sm comparison-neutral';
+            compEl.textContent = `Không đổi`;
+        }
+    }
+
+
+    // --- RENDER FUNCTIONS ---
+    function renderEmployeeTable(employeeList) {
+        const tableBody = document.getElementById('employee-table');
+        tableBody.innerHTML = '';
+        employeeList.forEach(emp => {
+            const statusClass = emp.status === 'Đang tham gia' ? 'bg-green-100 text-green-800' : (emp.status === 'Đã nghỉ' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800');
+            tableBody.innerHTML += `<tr class="hover:bg-slate-50 border-b"><td class="p-3">${emp.name}</td><td class="p-3">${emp.code}</td><td class="p-3">${emp.bhxh}</td><td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">${emp.status}</span></td><td class="p-3"><button data-id="${emp.id}" class="edit-btn text-teal-600 hover:text-teal-800">Xem/Sửa</button></td></tr>`;
+        });
+        document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', handleEditEmployee));
+    }
+    
+    function handleEditEmployee(e) {
+        const empId = parseInt(e.target.dataset.id, 10);
+        const emp = employees.find(em => em.id === empId);
+        if (!emp) return;
+        document.getElementById('modal-employee-id').value = emp.id;
+        document.getElementById('modal-employee-name').value = emp.name;
+        document.getElementById('modal-employee-code').value = emp.code;
+        document.getElementById('modal-bhxh-code').value = emp.bhxh;
+        document.getElementById('modal-bhyt-card-no').value = emp.bhyt;
+        document.getElementById('modal-bhyt-expiry-date').value = emp.bhytExpiry;
+        document.getElementById('modal-bhyt-hospital').value = emp.hospital;
+        document.getElementById('modal-status').value = emp.status;
+        document.getElementById('modal-start-date').value = emp.joinDate;
+        const currentSalary = emp.salaryHistory.length > 0 ? emp.salaryHistory[emp.salaryHistory.length - 1].salary : 0;
+        document.getElementById('modal-current-salary').value = formatCurrency(currentSalary);
+        document.getElementById('bhxh-check').checked = true;
+        document.getElementById('bhtn-check').checked = true;
+        document.getElementById('bhyt-check').checked = !!emp.bhyt;
+        bhytDetails.classList.toggle('hidden', !document.getElementById('bhyt-check').checked);
+        const salaryTable = document.getElementById('salary-history-table');
+        salaryTable.innerHTML = '';
+        emp.salaryHistory.forEach(hist => {
+            salaryTable.innerHTML += `<tr class="border-b"><td class="p-2">${hist.from}</td><td class="p-2">${hist.to || 'Hiện tại'}</td><td class="p-2">${formatCurrency(hist.salary)}</td></tr>`;
+        });
+        openModal();
+    }
+    
+    document.getElementById('employee-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const empId = parseInt(document.getElementById('modal-employee-id').value, 10);
+        const empIndex = employees.findIndex(em => em.id === empId);
+        if (empIndex > -1) {
+            employees[empIndex] = {
+                ...employees[empIndex],
+                bhxh: document.getElementById('modal-bhxh-code').value,
+                bhyt: document.getElementById('modal-bhyt-card-no').value,
+                bhytExpiry: document.getElementById('modal-bhyt-expiry-date').value,
+                hospital: document.getElementById('modal-bhyt-hospital').value,
+                status: document.getElementById('modal-status').value,
+                joinDate: document.getElementById('modal-start-date').value,
+            };
+            renderEmployeeTable(employees);
+            updateDashboard();
+            closeModal();
+        }
+    });
+
+    document.getElementById('employee-search').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const filteredEmployees = employees.filter(emp => 
+            emp.name.toLowerCase().includes(searchTerm) ||
+            emp.code.toLowerCase().includes(searchTerm) ||
+            emp.bhxh.includes(searchTerm)
+        );
+        renderEmployeeTable(filteredEmployees);
+    });
+
+    document.getElementById('generate-changes-btn').addEventListener('click', () => {
+        const period = document.getElementById('report-period').value;
+        if (!period) { alert("Vui lòng chọn kỳ báo cáo."); return; }
+        const getMonthYear = (dateStr) => dateStr ? dateStr.substring(0, 7) : '';
+        const increases = employees.filter(e => getMonthYear(e.joinDate) === period);
+        const decreases = employees.filter(e => getMonthYear(e.leaveDate) === period);
+        const adjustments = employees.filter(e => e.id % 10 === 1 && getMonthYear(e.salaryHistory[1].from) === period);
+        const increaseTable = document.getElementById('increase-table');
+        increaseTable.innerHTML = '';
+        increases.forEach(e => { increaseTable.innerHTML += `<tr class="border-b"><td class="p-3"><input type="checkbox" checked></td><td class="p-3">${e.name}</td><td class="p-3">${e.bhxh}</td><td class="p-3">${formatCurrency(e.salaryHistory[e.salaryHistory.length - 1].salary)}</td><td class="p-3">Tăng mới</td></tr>`; });
+        const decreaseTable = document.getElementById('decrease-table');
+        decreaseTable.innerHTML = '';
+        decreases.forEach(e => { decreaseTable.innerHTML += `<tr class="border-b"><td class="p-3"><input type="checkbox" checked></td><td class="p-3">${e.name}</td><td class="p-3">${e.bhxh}</td><td class="p-3">Nghỉ việc</td></tr>`; });
+        const adjustmentTable = document.getElementById('adjustment-table');
+        adjustmentTable.innerHTML = '';
+        adjustments.forEach(e => { adjustmentTable.innerHTML += `<tr class="border-b"><td class="p-3"><input type="checkbox" checked></td><td class="p-3">${e.name}</td><td class="p-3">${e.bhxh}</td><td class="p-3">${formatCurrency(e.salaryHistory[0].salary)}</td><td class="p-3">${formatCurrency(e.salaryHistory[1].salary)}</td></tr>`; });
+        document.getElementById('changes-results').classList.remove('hidden');
+    });
+    
+    let costChart;
+    document.getElementById('generate-report-btn').addEventListener('click', () => {
+        const reportType = document.getElementById('report-type').value;
+        const reportC12 = document.getElementById('report-c12-content');
+        const reportCost = document.getElementById('report-cost-content');
+        if (reportType === 'c12') {
+            reportC12.classList.remove('hidden');
+            reportCost.classList.add('hidden');
+            const c12Table = document.getElementById('c12-table');
+            c12Table.innerHTML = '';
+            employees.filter(e => e.status === 'Đang tham gia').forEach(e => {
+                const currentSalary = e.salaryHistory[e.salaryHistory.length - 1].salary;
+                const companyPaid = currentSalary * 0.215;
+                const employeePaid = currentSalary * 0.105;
+                c12Table.innerHTML += `<tr class="border-b"><td class="p-3">${e.name}</td><td class="p-3">${e.bhxh}</td><td class="p-3">${formatCurrency(currentSalary)}</td><td class="p-3">${formatCurrency(companyPaid)}</td><td class="p-3">${formatCurrency(employeePaid)}</td><td class="p-3 font-bold">${formatCurrency(companyPaid + employeePaid)}</td></tr>`;
+            });
+        } else if (reportType === 'cost') {
+            reportC12.classList.add('hidden');
+            reportCost.classList.remove('hidden');
+            const data = { labels: ['Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9'], datasets: [{ label: 'Công ty đóng', data: [65000000, 59000000, 80000000, 81000000], backgroundColor: 'rgba(20, 110, 190, 0.6)' }, { label: 'Người LĐ đóng', data: [32000000, 29000000, 40000000, 41000000], backgroundColor: 'rgba(22, 163, 74, 0.6)' }] };
+            createOrUpdateChart(document.getElementById('cost-chart').getContext('2d'), 'bar', data, { maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: value => formatCurrency(value) }}}, plugins: { tooltip: { callbacks: { label: context => `${context.dataset.label}: ${formatCurrency(context.raw)}` }}}});
+        }
+    });
+
+    // --- INITIAL LOAD ---
+    function initializeApp() {
+        const today = new Date();
+        const currentMonthYear = today.toISOString().slice(0, 7);
+        monthFilter.value = currentMonthYear;
+        yearFilter.value = today.getFullYear();
+        
+        const currentQuarter = Math.floor(today.getMonth() / 3) + 1;
+        quarterFilter.value = currentQuarter;
+
+        filterType.dispatchEvent(new Event('change'));
+        updateDashboard();
+        renderEmployeeTable(employees);
+
+        const defaultReportMonth = today.toISOString().slice(0, 7);
+        document.getElementById('report-period').value = defaultReportMonth;
+        document.getElementById('report-from-period').value = defaultReportMonth;
+        document.getElementById('report-to-period').value = defaultReportMonth;
+    }
+
+    initializeApp();
+});
+</script>
+</body>
+</html>
+
